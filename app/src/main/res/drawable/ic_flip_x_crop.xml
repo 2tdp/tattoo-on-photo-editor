@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="29dp"
+    android:height="28dp"
+    android:viewportWidth="29"
+    android:viewportHeight="28">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M24.93 23.9l-7.65-3.06c-0.3-0.12-0.48-0.4-0.48-0.71V7.87c0-0.3 0.19-0.59 0.48-0.7l7.65-3.07c0.24-0.1 0.5-0.06 0.72 0.08 0.2 0.14 0.33 0.38 0.33 0.63V23.2c0 0.25-0.12 0.49-0.33 0.63-0.21 0.14-0.48 0.17-0.72 0.08Zm-6.6-4.3l6.12 2.46V5.94L18.33 8.4v11.22Z"/>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3.35 23.82c-0.2-0.14-0.33-0.38-0.33-0.63V4.8c0-0.25 0.12-0.49 0.33-0.63C3.56 4.04 3.83 4 4.07 4.1l7.65 3.06c0.3 0.12 0.48 0.4 0.48 0.71v12.25c0 0.32-0.19 0.6-0.48 0.72L4.07 23.9c-0.24 0.1-0.51 0.06-0.72-0.08Zm1.2-17.88v16.12l6.12-2.45V8.39L4.55 5.94Zm6.89 14.18Z"/>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M14.5 27.07c-0.42 0-0.77-0.35-0.77-0.77v-1.58c0-0.42 0.35-0.77 0.77-0.77 0.42 0 0.77 0.35 0.77 0.77v1.58c0 0.42-0.35 0.77-0.77 0.77Z"/>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M14.5 22.42c-0.42 0-0.77-0.34-0.77-0.76v-1.54c0-0.42 0.35-0.76 0.77-0.76 0.42 0 0.77 0.34 0.77 0.77v1.53c0 0.42-0.35 0.76-0.77 0.76Z"/>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M14.5 17.83c-0.42 0-0.77-0.34-0.77-0.77v-1.53c0-0.42 0.35-0.76 0.77-0.76 0.42 0 0.77 0.34 0.77 0.76v1.53c0 0.43-0.35 0.77-0.77 0.77Z"/>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M14.5 13.23c-0.42 0-0.77-0.34-0.77-0.76v-1.53c0-0.43 0.35-0.77 0.77-0.77 0.42 0 0.77 0.34 0.77 0.77v1.53c0 0.42-0.35 0.76-0.77 0.76Z"/>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M14.5 8.64c-0.42 0-0.77-0.34-0.77-0.77V6.34c0-0.42 0.35-0.76 0.77-0.76 0.42 0 0.77 0.34 0.77 0.76v1.54c0 0.42-0.35 0.76-0.77 0.76Z"/>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M14.5 4.05c-0.42 0-0.77-0.35-0.77-0.77V1.7c0-0.42 0.35-0.77 0.77-0.77 0.42 0 0.77 0.35 0.77 0.77v1.58c0 0.42-0.35 0.77-0.77 0.77Z"/>
+</vector>
