@@ -32,7 +32,7 @@ import androidx.annotation.Dimension;
 import androidx.core.content.ContextCompat;
 
 import com.tattoo.tattoomaker.on.myphoto.R;
-import com.tattoo.tattoomaker.on.myphoto.utils.Constant;
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant;
 
 public class SimpleRatingBar extends View {
 

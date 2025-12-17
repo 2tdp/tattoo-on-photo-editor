@@ -3,88 +3,60 @@ package com.tattoo.tattoomaker.on.myphoto.adapter
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
+import android.net.Uri
+import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.tattoo.tattoomaker.on.myphoto.addview.viewedit.ViewTattoos
+import com.bumptech.glide.Glide
+import com.tattoo.tattoomaker.on.myphoto.R
 import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackItem
 import com.tattoo.tattoomaker.on.myphoto.model.TattooModel
 import com.tattoo.tattoomaker.on.myphoto.utils.Utils
 import com.tattoo.tattoomaker.on.myphoto.viewcustom.CustomDrawPathData
+import androidx.core.net.toUri
+import com.tattoo.tattoomaker.on.myphoto.MyApp
+import com.tattoo.tattoomaker.on.myphoto.databinding.ItemTattooBinding
+import com.tattoo.tattoomaker.on.myphoto.extensions.setOnUnDoubleClickListener
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant.URI_ASSETS
+import dagger.hilt.android.qualifiers.ActivityContext
+import javax.inject.Inject
 
-class TattooAdapter(context: Context, callBack: ICallBackItem): RecyclerView.Adapter<TattooAdapter.TattooHolder>() {
+class TattooAdapter(private val context: Context, private val callBack: ICallBackItem): RecyclerView.Adapter<TattooAdapter.TattooHolder>() {
 
-    private val context: Context
-    private val callBack: ICallBackItem
-    private var lstTattoo: ArrayList<TattooModel>
+    private var lstTattoo: MutableList<TattooModel> = mutableListOf()
 
-    private var w = 0F
-
-    init {
-        this.context = context
-        this.callBack = callBack
-
-        lstTattoo = ArrayList()
-        w = context.resources.displayMetrics.widthPixels / 100F
-    }
-
-    fun setData(lstTattoo: ArrayList<TattooModel>) {
+    fun setData(lstTattoo: MutableList<TattooModel>) {
         this.lstTattoo = lstTattoo
 
         this.lstTattoo.reverse()
         notifyChange()
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TattooHolder {
-        return TattooHolder(CustomDrawPathData(context))
-    }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TattooHolder =
+        TattooHolder(ItemTattooBinding.inflate(LayoutInflater.from(context), parent, false))
 
     override fun onBindViewHolder(holder: TattooHolder, position: Int) {
         holder.onBind(position)
     }
 
-    override fun getItemCount(): Int {
-        if (lstTattoo.isNotEmpty()) return lstTattoo.size
-        return 0
-    }
+    override fun getItemCount(): Int = if (lstTattoo.isNotEmpty())  lstTattoo.size else 0
 
-    inner class TattooHolder(itemView: CustomDrawPathData): RecyclerView.ViewHolder(itemView) {
-
-        private val vPath: CustomDrawPathData
-
-        init {
-            this.vPath = itemView
-            vPath.apply {
-                background =
-                    Utils.createBackground(intArrayOf(Color.TRANSPARENT), (2f * w).toInt(), (0.55f * w).toInt(), Color.WHITE)
-            }
-        }
+    inner class TattooHolder(private val binding: ItemTattooBinding): RecyclerView.ViewHolder(binding.root) {
 
         fun onBind(position: Int) {
             val tattoo = lstTattoo[position]
 
-            when (position) {
-                0 -> vPath.layoutParams =
-                    RecyclerView.LayoutParams((7.778f * w).toInt(), (10.556f * w).toInt()).apply {
-                        leftMargin = (4.44f * w).toInt()
-                        rightMargin = (2.22f * w).toInt()
-                    }
-                lstTattoo.size - 1 -> vPath.layoutParams =
-                    RecyclerView.LayoutParams((7.778f * w).toInt(), (10.556f * w).toInt()).apply {
-                        leftMargin = (2.22f * w).toInt()
-                        rightMargin = (4.44f * w).toInt()
-                    }
-                else -> vPath.layoutParams =
-                    RecyclerView.LayoutParams((7.778f * w).toInt(), (10.556f * w).toInt()).apply {
-                        leftMargin = (2.22f * w).toInt()
-                        rightMargin = (2.22f * w).toInt()
-                    }
+            if (!tattoo.isPremium) {
+                binding.vPath.setDataPath(tattoo.lstPathData)
+            } else {
+                Glide.with(context)
+                    .load("$URI_ASSETS${tattoo.nameFolder}/${tattoo.name}".toUri())
+                    .placeholder(R.drawable.im_place_holder)
+                    .into(binding.iv)
             }
 
-            vPath.setDataPath(tattoo.lstPathData)
-
-            vPath.setOnClickListener { callBack.callBack(tattoo, position) }
+            binding.root.setOnUnDoubleClickListener { callBack.callBack(tattoo, position) }
         }
-
     }
 
     @SuppressLint("NotifyDataSetChanged")

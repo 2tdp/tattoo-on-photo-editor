@@ -26,7 +26,7 @@ import androidx.core.view.MotionEventCompat;
 import androidx.core.view.ViewCompat;
 
 import com.tattoo.tattoomaker.on.myphoto.R;
-import com.tattoo.tattoomaker.on.myphoto.utils.Constant;
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant;
 import com.tattoo.tattoomaker.on.myphoto.utils.UtilsBitmap;
 import com.tattoo.tattoomaker.on.myphoto.viewcustom.stickerviewcustom.DrawableStickerCustom;
 import com.tattoo.tattoomaker.on.myphoto.viewcustom.stickerviewcustom.TextStickerCustom;
@@ -606,8 +606,8 @@ public class StickerView extends FrameLayout {
                     DrawableStickerCustom drawableSticker = (DrawableStickerCustom) sticker;
                     switch (drawableSticker.getTypeSticker()) {
                         case Constant.TATTOO_PREMIUM:
-                            if (drawableSticker.getTattooPremiumModel().getMatrix() != null)
-                                matrix.setValues(drawableSticker.getTattooPremiumModel().getMatrix());
+                            if (drawableSticker.getTattooModel().getMatrix() != null)
+                                matrix.setValues(drawableSticker.getTattooModel().getMatrix());
                             break;
                         case Constant.TATTOO:
                             if (drawableSticker.getTattooModel().getMatrix() != null)

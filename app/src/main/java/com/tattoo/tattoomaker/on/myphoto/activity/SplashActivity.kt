@@ -2,39 +2,33 @@ package com.tattoo.tattoomaker.on.myphoto.activity
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import com.tattoo.tattoomaker.on.myphoto.R
 import com.tattoo.tattoomaker.on.myphoto.activity.base.BaseActivity
-import com.tattoo.tattoomaker.on.myphoto.addview.ViewSplash
+import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackItem
+import com.tattoo.tattoomaker.on.myphoto.databinding.ActivitySplashBinding
+import com.tattoo.tattoomaker.on.myphoto.sharepref.DataLocalManager
+import kotlin.jvm.java
 
 @SuppressLint("CustomSplashScreen")
-class SplashActivity : BaseActivity() {
+class SplashActivity : BaseActivity<ActivitySplashBinding>(ActivitySplashBinding::inflate) {
 
-    private lateinit var viewSplash: ViewSplash
+    override fun handleKeyboardUi(isVisible: Boolean, imeHeight: Int) {
 
-    private var progressStatus = 0
-    private val handler = Handler(Looper.getMainLooper())
+    }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        viewSplash = ViewSplash(this@SplashActivity)
-        setContentView(viewSplash)
-
-        Thread {
-            while (progressStatus < 99) {
-                progressStatus += 1
-                handler.post { viewSplash.customSeekbarLoading.setProgress(progressStatus) }
-                try {
-                    Thread.sleep(34)
-                } catch (e: InterruptedException) {
-                    e.printStackTrace()
-                }
+    override fun setUp() {
+        binding.vLoading.onProgress = object : ICallBackItem {
+            override fun callBack(ob: Any?, position: Int) {
+                binding.tvProgress.text = "${getString(R.string.loading)}($position%)..."
             }
-            val intent = Intent(this@SplashActivity, MainActivity::class.java)
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(intent)
-            finish()
-        }.start()
+        }
+
+        Handler(Looper.getMainLooper()).postDelayed({ startActivity(false) }, 1500)
+    }
+
+    private fun startActivity(isShowNativeFull: Boolean) {
+        startIntent(Intent(this@SplashActivity, OnBoardingActivity::class.java), true)
     }
 }

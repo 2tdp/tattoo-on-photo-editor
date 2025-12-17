@@ -1,11 +1,15 @@
 package com.tattoo.tattoomaker.on.myphoto.activity
 
-import android.os.Bundle
 import com.tattoo.tattoomaker.on.myphoto.activity.base.BaseActivity
+import com.tattoo.tattoomaker.on.myphoto.databinding.ActivityOnBoardingBinding
 
-class OnBoardingActivity: BaseActivity() {
+class OnBoardingActivity: BaseActivity<ActivityOnBoardingBinding>(ActivityOnBoardingBinding::inflate) {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    override fun handleKeyboardUi(isVisible: Boolean, imeHeight: Int) {
+
+    }
+
+    override fun setUp() {
+
     }
 }

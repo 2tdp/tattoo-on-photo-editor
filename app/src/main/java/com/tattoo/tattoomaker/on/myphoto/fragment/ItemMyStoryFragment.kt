@@ -15,7 +15,7 @@ import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackItem
 import com.tattoo.tattoomaker.on.myphoto.model.ProjectModel
 import com.tattoo.tattoomaker.on.myphoto.model.picture.PicModel
 import com.tattoo.tattoomaker.on.myphoto.sharepref.DataLocalManager
-import com.tattoo.tattoomaker.on.myphoto.utils.Constant
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant
 import com.tattoo.tattoomaker.on.myphoto.utils.Utils
 
 class ItemMyStoryFragment(lstPro: ArrayList<ProjectModel>, callBack: ICallBackItem): Fragment() {

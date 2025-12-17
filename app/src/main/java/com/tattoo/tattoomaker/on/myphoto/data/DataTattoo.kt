@@ -1,7 +1,6 @@
 package com.tattoo.tattoomaker.on.myphoto.data
 
 import android.content.Context
-import android.graphics.Color
 import android.graphics.Path
 import androidx.core.graphics.PathParser
 import com.google.gson.Gson
@@ -9,20 +8,22 @@ import com.google.gson.reflect.TypeToken
 import com.tattoo.tattoomaker.on.myphoto.model.ColorModel
 import com.tattoo.tattoomaker.on.myphoto.model.ShadowModel
 import com.tattoo.tattoomaker.on.myphoto.model.TattooModel
-import com.tattoo.tattoomaker.on.myphoto.model.TattooPremiumModel
-import com.tattoo.tattoomaker.on.myphoto.sharepref.DataLocalManager
 import java.io.IOException
 
 object DataTattoo {
 
-    fun getDataTattooPremium(context: Context, name: String): ArrayList<TattooPremiumModel> {
-        val lstTattooPremium = ArrayList<TattooPremiumModel>()
+    fun getDataTattooPremium(context: Context, name: String): MutableList<TattooModel> {
+        val lstTattooPremium = mutableListOf<TattooModel>()
         try {
-            val f = context.assets.list(name)
-            for (s in f!!) {
-                lstTattooPremium.add(
-                    TattooPremiumModel(0, s!!, name, 0f, 255, false, false, false, null)
-                )
+            context.assets.list(name)?.let { folder ->
+                for (s in folder) {
+                    lstTattooPremium.add(
+                        TattooModel(
+                            0, s.toString(), name, mutableListOf(),
+                            ColorModel(), ShadowModel(), 255, false, false, false, null
+                        )
+                    )
+                }
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -30,21 +31,21 @@ object DataTattoo {
         return lstTattooPremium
     }
 
-    fun getDataTattoo(context: Context, name: String): ArrayList<TattooModel> {
-        val lstTattoo = ArrayList<TattooModel>()
+    fun getDataTattoo(context: Context, name: String): MutableList<TattooModel> {
+        val lstTattoo = mutableListOf<TattooModel>()
         try {
-            val f = context.assets.list(name)
-            for (s in f!!) {
-                lstTattoo.add(
-                    TattooModel(
-                        0, s, name, getPathDataTattoo(context, s, name),
-                        ColorModel(Color.BLACK, Color.BLACK, 0, false),
-                        ShadowModel(0F, 0F, 0F, 0), 255, false,
-                        false, false, null
+            context.assets.list(name)?.let { folder ->
+                for (s in folder) {
+                    lstTattoo.add(
+                        TattooModel(
+                            0, s, name, getPathDataTattoo(context, s, name),
+                            ColorModel(), ShadowModel(), 255, false, false, false, null
+                        )
                     )
-                )
+                }
             }
 
+            lstTattoo.addAll(getDataTattooPremium(context, "tattoo/tattoo_premium"))
         } catch (e: IOException) {
             e.printStackTrace()
         }

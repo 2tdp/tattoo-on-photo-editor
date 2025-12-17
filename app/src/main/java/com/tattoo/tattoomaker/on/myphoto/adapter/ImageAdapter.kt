@@ -2,223 +2,91 @@ package com.tattoo.tattoomaker.on.myphoto.adapter
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Color
-import android.net.Uri
+import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.ImageView
 import androidx.core.content.ContextCompat
-import androidx.core.view.setPadding
+import androidx.core.net.toUri
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.makeramen.roundedimageview.RoundedImageView
+import com.tattoo.tattoomaker.on.myphoto.MyApp
 import com.tattoo.tattoomaker.on.myphoto.R
 import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackItem
+import com.tattoo.tattoomaker.on.myphoto.databinding.ItemImageBinding
+import com.tattoo.tattoomaker.on.myphoto.extensions.setOnUnDoubleClickListener
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant.URI_ASSETS
 import com.tattoo.tattoomaker.on.myphoto.model.FilterModel
 import com.tattoo.tattoomaker.on.myphoto.model.FrameModel
-import com.tattoo.tattoomaker.on.myphoto.model.TattooPremiumModel
-import com.tattoo.tattoomaker.on.myphoto.utils.Constant
-import com.tattoo.tattoomaker.on.myphoto.utils.Utils
 
-class ImageAdapter(context: Context, type: String, callBack: ICallBackItem): RecyclerView.Adapter<ImageAdapter.TattooPremiumHolder>() {
+class ImageAdapter(private val context: Context): RecyclerView.Adapter<ImageAdapter.ImageHolder>() {
 
-    private val context: Context
-    private val type: String
-    private val callBack: ICallBackItem
-    private var lstTattooPremium: ArrayList<TattooPremiumModel>
-    private var lstFilter: ArrayList<FilterModel>
-    private var lstFrame: ArrayList<FrameModel>
-    private var w = 0F
-
-    init {
-        this.context = context
-        this.type = type
-        this.callBack = callBack
-
-        lstTattooPremium = ArrayList()
-        lstFilter = ArrayList()
-        lstFrame = ArrayList()
-        w = context.resources.displayMetrics.widthPixels / 100F
+    companion object {
+        const val TYPE_FRAME = 0
+        const val TYPE_IMAGE = 1
     }
 
-    fun setDataTattooPremium(lstTattooPremium: ArrayList<TattooPremiumModel>) {
-        this.lstTattooPremium = lstTattooPremium
+    var callBack: ICallBackItem? = null
+    private var lstData: MutableList<Any> = mutableListOf()
+
+    fun setData(lstData: MutableList<Any>) {
+        this.lstData = lstData
 
         notifyChange()
     }
 
-    fun setDataFilter(lstFilter: ArrayList<FilterModel>) {
-        this.lstFilter = lstFilter
-
-        notifyChange()
+    override fun getItemViewType(position: Int): Int = when(lstData[position]) {
+        is FrameModel -> TYPE_FRAME
+        else -> TYPE_IMAGE
     }
 
-    fun setDataFrame(lstFrame: ArrayList<FrameModel>) {
-        this.lstFrame = lstFrame
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
+        ImageHolder(ItemImageBinding.inflate(LayoutInflater.from(context), parent, false))
 
-        notifyChange()
-    }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TattooPremiumHolder {
-        return TattooPremiumHolder(ImageView(context), RoundedImageView(context))
-    }
-
-    override fun onBindViewHolder(holder: TattooPremiumHolder, position: Int) {
-        if (type == Constant.TATTOO_PREMIUM) holder.onBindTattooPremium(position)
-        if (type == Constant.FRAME) holder.onBindFrame(position)
-        if (type == Constant.BACKGROUND_FILTER) holder.onBindFilter(position)
-    }
-
-    override fun getItemCount(): Int {
-        if (type == Constant.TATTOO_PREMIUM && lstTattooPremium.isNotEmpty())
-            return lstTattooPremium.size
-
-        if (type == Constant.FRAME && lstFrame.isNotEmpty())
-            return lstFrame.size
-
-        if (type == Constant.BACKGROUND_FILTER && lstFilter.isNotEmpty())
-            return lstFilter.size
-        return 0
-    }
-
-    inner class TattooPremiumHolder(viewItem: ImageView, ivFilter: RoundedImageView): RecyclerView.ViewHolder(
-        if (type == Constant.TATTOO_PREMIUM || type == Constant.FRAME) viewItem
-        else ivFilter
-    ) {
-
-        private val iv: ImageView
-        private val ivFilter: RoundedImageView
-
-        init {
-            this.iv = viewItem
-            this.ivFilter = ivFilter
-            when (type) {
-                Constant.TATTOO_PREMIUM -> iv.apply {
-                    background = Utils.createBackground(
-                        intArrayOf(Color.TRANSPARENT), (2f * w).toInt(), (0.55f * w).toInt(), Color.WHITE)
-                    setPadding(w.toInt())
-                }
-                Constant.FRAME -> iv.apply {
-                    background =
-                        Utils.createBackground(intArrayOf(Color.WHITE), (2f * w).toInt(), -1, -1)
-                    setPadding(w.toInt())
-                }
-                Constant.BACKGROUND_FILTER -> ivFilter.apply {
-                    scaleType = ImageView.ScaleType.CENTER_CROP
-                    cornerRadius = 1.5f * w
-                    background = Utils.createBackground(
-                        intArrayOf(Color.TRANSPARENT), (2f * w).toInt(), (0.55f * w).toInt(), Color.WHITE)
-                    scaleType = ImageView.ScaleType.CENTER_CROP
-                }
-            }
+    override fun onBindViewHolder(holder: ImageHolder, position: Int) {
+        when(getItemViewType(position)) {
+            TYPE_FRAME -> holder.onBindFrame(position)
+            else -> holder.onBindFilter(position)
         }
+    }
 
-        fun onBindTattooPremium(position: Int) {
-            val tattooPremium = lstTattooPremium[position]
+    override fun getItemCount(): Int = if (lstData.isNotEmpty()) lstData.size else 0
 
-            when (position) {
-                0 -> iv.layoutParams =
-                    RecyclerView.LayoutParams((7.778f * w).toInt(), (10.556f * w).toInt()).apply {
-                        leftMargin = (4.44f * w).toInt()
-                        rightMargin = (2.22f * w).toInt()
-                    }
-                lstTattooPremium.size - 1 -> iv.layoutParams =
-                    RecyclerView.LayoutParams((7.778f * w).toInt(), (10.556f * w).toInt()).apply {
-                        leftMargin = (2.22f * w).toInt()
-                        rightMargin = (4.44f * w).toInt()
-                    }
-                else -> iv.layoutParams =
-                    RecyclerView.LayoutParams((7.778f * w).toInt(), (10.556f * w).toInt()).apply {
-                        leftMargin = (2.22f * w).toInt()
-                        rightMargin = (2.22f * w).toInt()
-                    }
-            }
-
-            if (tattooPremium.isSelected)
-                iv.background =
-                        Utils.createBackground(intArrayOf(Color.TRANSPARENT),
-                            (2f * w).toInt(),
-                            (0.55f * w).toInt(),
-                            ContextCompat.getColor(context, R.color.color_main))
-
-            Glide.with(context)
-                .load(Uri.parse("file:///android_asset/${tattooPremium.folder}/${tattooPremium.nameTattoo}"))
-                .placeholder(R.drawable.im_place_holder)
-                .into(iv)
-
-            itemView.setOnClickListener { callBack.callBack(tattooPremium, position) }
-        }
+    inner class ImageHolder(private val binding: ItemImageBinding): RecyclerView.ViewHolder(binding.root) {
 
         fun onBindFrame(position: Int) {
-            val frame = lstFrame[position]
-
-            when (position) {
-                0 -> iv.layoutParams =
-                    RecyclerView.LayoutParams((7.778f * w).toInt(), (10.556f * w).toInt()).apply {
-                        leftMargin = (4.44f * w).toInt()
-                        rightMargin = (2.22f * w).toInt()
-                    }
-                lstTattooPremium.size - 1 -> iv.layoutParams =
-                    RecyclerView.LayoutParams((7.778f * w).toInt(), (10.556f * w).toInt()).apply {
-                        leftMargin = (2.22f * w).toInt()
-                        rightMargin = (4.44f * w).toInt()
-                    }
-                else -> iv.layoutParams =
-                    RecyclerView.LayoutParams((7.778f * w).toInt(), (10.556f * w).toInt()).apply {
-                        leftMargin = (2.22f * w).toInt()
-                        rightMargin = (2.22f * w).toInt()
-                    }
-            }
+            val frame = lstData[position] as FrameModel
 
             Glide.with(context)
-                .load(Uri.parse("file:///android_asset/${frame.folder}/${frame.name}"))
+                .load("$URI_ASSETS${frame.folder}/${frame.name}".toUri())
                 .placeholder(R.drawable.im_place_holder)
-                .into(iv)
+                .into(binding.iv)
 
-            itemView.setOnClickListener { callBack.callBack(frame, position) }
+            binding.iv.setOnUnDoubleClickListener { callBack?.callBack(frame, position) }
         }
 
         fun onBindFilter(position: Int) {
-            val filter = lstFilter[position]
-
-            when (position) {
-                0 -> ivFilter.layoutParams =
-                    RecyclerView.LayoutParams((7.778f * w).toInt(), (10.556f * w).toInt()).apply {
-                        leftMargin = (4.44f * w).toInt()
-                        rightMargin = (2.22f * w).toInt()
-                    }
-                lstTattooPremium.size - 1 -> ivFilter.layoutParams =
-                    RecyclerView.LayoutParams((7.778f * w).toInt(), (10.556f * w).toInt()).apply {
-                        leftMargin = (2.22f * w).toInt()
-                        rightMargin = (4.44f * w).toInt()
-                    }
-                else -> ivFilter.layoutParams =
-                    RecyclerView.LayoutParams((7.778f * w).toInt(), (10.556f * w).toInt()).apply {
-                        leftMargin = (2.22f * w).toInt()
-                        rightMargin = (2.22f * w).toInt()
-                    }
-            }
+            val filter = lstData[position] as FilterModel
 
             if (!filter.isCheck)
-                ivFilter.apply {
+                binding.ivFilter.apply {
                     borderColor = ContextCompat.getColor(context, R.color.white)
-                    borderWidth = 0.34f * w
+                    borderWidth = 0.34f * MyApp.w
                 }
-            else ivFilter.apply {
+            else binding.ivFilter.apply {
                 borderColor = ContextCompat.getColor(context, R.color.color_main)
-                borderWidth = 0.34f * w
+                borderWidth = 0.34f * MyApp.w
             }
 
-            ivFilter.setImageBitmap(filter.bitmap)
+            binding.ivFilter.setImageBitmap(filter.bitmap)
 
-            itemView.setOnClickListener {
-                callBack.callBack(filter, position)
+            binding.ivFilter.setOnUnDoubleClickListener {
+                callBack?.callBack(filter, position)
                 setCurrent(position)
             }
         }
     }
 
     fun setCurrent(pos: Int) {
-        for (i in lstFilter.indices) lstFilter[i].isCheck = i == pos
+        for (i in lstData.indices) (lstData[i] as FilterModel).isCheck = i == pos
 
         notifyChange()
     }

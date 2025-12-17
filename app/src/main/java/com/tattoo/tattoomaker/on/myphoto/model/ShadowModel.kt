@@ -1,6 +1,10 @@
 package com.tattoo.tattoomaker.on.myphoto.model
+
 import java.io.Serializable
 
-class ShadowModel(var xPos: Float, var yPos: Float, var blur: Float, var colorBlur: Int) : Serializable {
-
-}
+data class ShadowModel(
+    var xPos: Float = 0f,
+    var yPos: Float = 0f,
+    var blur: Float = 0f,
+    var colorBlur: Int = -1
+) : Serializable

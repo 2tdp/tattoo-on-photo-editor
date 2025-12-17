@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/im_bg_home">
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/ivSetting"
+        android:layout_width="@dimen/_34sdp"
+        android:layout_height="@dimen/_34sdp"
+        android:layout_marginTop="@dimen/_34sdp"
+        android:layout_marginEnd="@dimen/_16sdp"
+        android:padding="@dimen/_5sdp"
+        android:src="@drawable/ic_setting"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidLine"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent=".55" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_98sdp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/im_splash_2"
+        app:layout_constraintBottom_toTopOf="@id/guidLine"
+        app:layout_constraintTop_toBottomOf="@id/ivSetting" />
+
+    <TextView
+        android:id="@+id/tvCreate"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_55sdp"
+        android:layout_marginHorizontal="@dimen/_24sdp"
+        android:background="@drawable/bg_btn_enable"
+        android:fontFamily="@font/solway_rooters"
+        android:gravity="center"
+        android:text="@string/create"
+        android:textColor="@color/white"
+        android:textSize="@dimen/_18ssp"
+        app:layout_constraintBottom_toTopOf="@id/tvMyTatoo"
+        app:layout_constraintTop_toTopOf="@id/guidLine"
+        app:layout_constraintVertical_chainStyle="packed" />
+
+    <TextView
+        android:id="@+id/tvMyTatoo"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_55sdp"
+        android:layout_marginHorizontal="@dimen/_24sdp"
+        android:layout_marginTop="@dimen/_16sdp"
+        android:background="@drawable/bg_btn_enable"
+        android:fontFamily="@font/solway_rooters"
+        android:gravity="center"
+        android:text="@string/my_story"
+        android:textColor="@color/white"
+        android:textSize="@dimen/_18ssp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvCreate" />
+</androidx.constraintlayout.widget.ConstraintLayout>

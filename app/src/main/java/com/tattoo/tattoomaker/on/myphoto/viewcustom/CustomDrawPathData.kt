@@ -1,12 +1,27 @@
 package com.tattoo.tattoomaker.on.myphoto.viewcustom
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
+import android.util.AttributeSet
 import android.view.View
 import androidx.core.graphics.PathParser
+import androidx.core.graphics.toColorInt
 import com.tattoo.tattoomaker.on.myphoto.utils.UtilsBitmap
 
-class CustomDrawPathData(context: Context) : View(context) {
+class CustomDrawPathData : View {
+
+    constructor(context: Context) : super(context)
+    constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
+    constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr
+    )
+
     private var path: Path? = null
     private var paint: Paint? = null
     private var rectF: RectF? = null
@@ -36,7 +51,7 @@ class CustomDrawPathData(context: Context) : View(context) {
         for (pathData in lstPath) {
             if (pathData == "evenOdd") path!!.fillType = Path.FillType.EVEN_ODD
             else if (pathData.contains("#"))
-                paint!!.color = Color.parseColor(pathData)
+                paint!!.color = pathData.toColorInt()
             else path!!.addPath(PathParser.createPathFromPathData(pathData))
         }
         paint!!.color = Color.WHITE

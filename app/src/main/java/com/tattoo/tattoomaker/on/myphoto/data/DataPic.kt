@@ -9,7 +9,7 @@ import com.tattoo.tattoomaker.on.myphoto.R
 import com.tattoo.tattoomaker.on.myphoto.model.picture.BucketPicModel
 import com.tattoo.tattoomaker.on.myphoto.model.picture.PicModel
 import com.tattoo.tattoomaker.on.myphoto.sharepref.DataLocalManager
-import com.tattoo.tattoomaker.on.myphoto.utils.Constant
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant
 import com.tattoo.tattoomaker.on.myphoto.utils.UtilsBitmap
 import java.io.File
 import java.io.IOException

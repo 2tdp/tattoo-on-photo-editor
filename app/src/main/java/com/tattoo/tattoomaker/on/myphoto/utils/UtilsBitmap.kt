@@ -12,6 +12,7 @@ import android.view.View
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
 import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackItem
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant
 import java.io.*
 import java.lang.Exception
 import java.util.*
@@ -219,17 +220,21 @@ object UtilsBitmap {
 
     @SuppressLint("Recycle")
     @Throws(IOException::class)
-    fun modifyOrientation(context: Context, bitmap: Bitmap, uri: Uri?): Bitmap {
-        val `is` = context.contentResolver.openInputStream(uri!!)
-        val ei = ExifInterface(`is`!!)
-        val orientation =
-            ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
-        return when (orientation) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> rotateBitmap(bitmap, 90f)
-            ExifInterface.ORIENTATION_ROTATE_180 -> rotateBitmap(bitmap, 180f)
-            ExifInterface.ORIENTATION_ROTATE_270 -> rotateBitmap(bitmap, 270f)
-            else -> bitmap
+    fun modifyOrientation(context: Context, bitmap: Bitmap, uri: Uri?): Bitmap? {
+        uri?.let { uri ->
+            context.contentResolver.openInputStream(uri)?.let { inputStream ->
+                val ei = ExifInterface(inputStream)
+                val orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+                return when (orientation) {
+                    ExifInterface.ORIENTATION_ROTATE_90 -> rotateBitmap(bitmap, 90f)
+                    ExifInterface.ORIENTATION_ROTATE_180 -> rotateBitmap(bitmap, 180f)
+                    ExifInterface.ORIENTATION_ROTATE_270 -> rotateBitmap(bitmap, 270f)
+                    else -> bitmap
+                }
+            }
         }
+
+        return null
     }
 
     @Throws(IOException::class)

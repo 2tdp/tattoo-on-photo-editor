@@ -2,19 +2,19 @@ package com.tattoo.tattoomaker.on.myphoto.data
 
 import android.content.Context
 import com.tattoo.tattoomaker.on.myphoto.model.FrameModel
-import com.tattoo.tattoomaker.on.myphoto.model.TattooPremiumModel
 import java.io.IOException
 
 object DataFrame {
 
-    fun getDataFrame(context: Context, name: String): ArrayList<FrameModel> {
-        val lstFrame = ArrayList<FrameModel>()
+    fun getDataFrame(context: Context, name: String): MutableList<Any> {
+        val lstFrame = mutableListOf<FrameModel>()
         try {
-            val f = context.assets.list(name)
-            for (s in f!!) lstFrame.add(FrameModel(s!!, name, false))
+            context.assets.list(name)?.let { folder ->
+                for (s in folder) lstFrame.add(FrameModel(s.toString(), name, false))
+            }
         } catch (e: IOException) {
             e.printStackTrace()
         }
-        return lstFrame
+        return mutableListOf<Any>().apply { addAll(lstFrame) }
     }
 }

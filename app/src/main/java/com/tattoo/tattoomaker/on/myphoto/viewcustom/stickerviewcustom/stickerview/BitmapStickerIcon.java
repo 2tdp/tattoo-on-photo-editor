@@ -8,7 +8,7 @@ import android.view.MotionEvent;
 
 import androidx.annotation.IntDef;
 
-import com.tattoo.tattoomaker.on.myphoto.utils.Constant;
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant;
 import com.tattoo.tattoomaker.on.myphoto.viewcustom.stickerviewcustom.DrawableStickerCustom;
 
 import java.lang.annotation.Retention;

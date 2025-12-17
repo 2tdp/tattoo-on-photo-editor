@@ -23,6 +23,7 @@
     <string name="continue_text">Continue</string>
     <string name="ok">OK</string>
     <string name="move">Move</string>
+    <string name="loading">Loading</string>
     <string name="empty">Empty</string>
 
     <string name="crop">Crop</string>
@@ -42,30 +43,14 @@
     <string name="pp">Privacy Policy</string>
     <string name="do_you_love_this_app">Do you love this app?</string>
 
-    //premium
-    <string name="lifetime">Life time</string>
-    <string name="lifetime_price">$99.99</string>
-    <string name="upgrade_premium">Upgrade Premium</string>
-    <string name="try_premium">Try Premium</string>
-    <string name="best_seller">Best Seller</string>
-    <string name="start_like_a_pro">Start Like A Pro</string>
-    <string name="unlock_all_feature">Unlock All Feature</string>
-    <string name="subscription_will_auto_renew_cancel_anytime">Subscription Will Auto-Renew. Cancel Anytime.</string>
-    <string name="create_tattoo">Create Tattoo</string>
-    <string name="unlock_all_tattoos">Unlock All Tattoos</string>
-    <string name="remove_all_ads">Remove All Ads</string>
-    <string name="full_feature">Full Feature</string>
-    <string name="lifetime_support">Lifetime Support</string>
-    <string name="des_vip_2">If the themes is not unlocked after payment, You can go to "Store > Restore". You\'ll automatically be charged each renewal period depending on your subscription. You can unsubscribe at anytime.</string>
-
     //edit
     <string name="pick_a_picture">Pick A Picture</string>
     <string name="crop_a_picture">Crop A Picture</string>
     <string name="camera">Camera</string>
     <string name="gallery">Gallery</string>
     <string name="rotate">Rotate</string>
-    <string name="flip_x">Flip-Y</string>
-    <string name="flip_y">Flip-X</string>
+    <string name="flip_x">Flip-X</string>
+    <string name="flip_y">Flip-Y</string>
     <string name="tattoos">Tattoos</string>
     <string name="tattoo">Tattoo</string>
     <string name="text">Text</string>

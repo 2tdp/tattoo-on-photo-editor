@@ -1,7 +1,7 @@
 package com.tattoo.tattoomaker.on.myphoto.model
 
 import android.content.Context
-import com.tattoo.tattoomaker.on.myphoto.utils.Constant
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant
 import com.tattoo.tattoomaker.on.myphoto.viewcustom.stickerviewcustom.DrawableStickerCustom
 import com.tattoo.tattoomaker.on.myphoto.viewcustom.stickerviewcustom.EditSticker
 import com.tattoo.tattoomaker.on.myphoto.viewcustom.stickerviewcustom.stickerview.Sticker
@@ -11,9 +11,9 @@ import java.util.ArrayList
 class TattooModel : EditSticker, Serializable {
 
     var id: Int
-    var nameDecor: String
+    var name: String
     var nameFolder: String
-    var lstPathData: ArrayList<String>
+    var lstPathData: MutableList<String> = mutableListOf()
     var colorModel: ColorModel?
     var shadowModel: ShadowModel?
     var opacity = 255
@@ -25,7 +25,7 @@ class TattooModel : EditSticker, Serializable {
     fun clone(): TattooModel {
         return TattooModel(
             this.id,
-            this.nameDecor,
+            this.name,
             this.nameFolder,
             this.lstPathData,
             this.colorModel,
@@ -39,7 +39,7 @@ class TattooModel : EditSticker, Serializable {
 
     constructor(tattooModel: TattooModel) {
         this.id = tattooModel.id
-        this.nameDecor = tattooModel.nameDecor
+        this.name = tattooModel.name
         this.nameFolder = tattooModel.nameFolder
         this.lstPathData = tattooModel.lstPathData
         this.colorModel = tattooModel.colorModel
@@ -52,12 +52,12 @@ class TattooModel : EditSticker, Serializable {
     }
 
     constructor(
-        id: Int, nameDecor: String, nameFolder: String, lstPathData: ArrayList<String>,
+        id: Int, name: String, nameFolder: String, lstPathData: MutableList<String>,
         colorModel: ColorModel?, shadowModel: ShadowModel?, opacity: Int, flipX: Boolean,
         flipY: Boolean, isPremium: Boolean, matrix: FloatArray?
     ) {
         this.id = id
-        this.nameDecor = nameDecor
+        this.name = name
         this.nameFolder = nameFolder
         this.lstPathData = lstPathData
         this.colorModel = colorModel
@@ -74,7 +74,7 @@ class TattooModel : EditSticker, Serializable {
         if (shadowModel != null)
             shadow = ShadowModel(shadowModel!!.xPos, shadowModel!!.yPos, shadowModel!!.blur, shadowModel!!.colorBlur)
         val tattooModel = TattooModel(
-            id, nameDecor, nameFolder, lstPathData, colorModel, shadow, opacity, isFlipX, isFlipY,
+            id, name, nameFolder, lstPathData, colorModel, shadow, opacity, isFlipX, isFlipY,
             isPremium, matrix
         )
         return DrawableStickerCustom(context, tattooModel, id, Constant.TATTOO)

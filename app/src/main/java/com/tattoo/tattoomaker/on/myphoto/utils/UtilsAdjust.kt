@@ -4,42 +4,45 @@ import android.graphics.*
 import com.tattoo.tattoomaker.on.myphoto.model.ColorModel
 import com.tattoo.tattoomaker.on.myphoto.model.background.AdjustModel
 import org.wysaid.nativePort.CGENativeLibrary
+import androidx.core.graphics.toColorInt
 
 object UtilsAdjust {
 
     fun setColor(color: ColorModel, paint: Paint, w: Float, h: Float) {
-        if (color.colorStart == color.colorEnd) {
-            paint.shader = null
-            paint.color = color.colorStart
-        } else {
-            if (color.direc == 4) {
-                val c = color.colorStart
-                color.apply {
-                    colorStart = color.colorEnd
-                    colorEnd = c
-                    direc = 0
+        if (color.colorStart != null && color.colorEnd != null) {
+            if (color.colorStart == color.colorEnd) {
+                paint.shader = null
+                paint.color = color.colorStart!!
+            } else {
+                if (color.direc == 4) {
+                    val c = color.colorStart
+                    color.apply {
+                        colorStart = color.colorEnd
+                        colorEnd = c
+                        direc = 0
+                    }
+                } else if (color.direc == 5) {
+                    val c = color.colorStart
+                    color.apply {
+                        colorStart = color.colorEnd
+                        colorEnd = c
+                        direc = 2
+                    }
                 }
-            } else if (color.direc == 5) {
-                val c = color.colorStart
-                color.apply {
-                    colorStart = color.colorEnd
-                    colorEnd = c
-                    direc = 2
-                }
+                val shader = LinearGradient(
+                    setDirection(color.direc, w, h)[0].toFloat(),
+                    setDirection(color.direc, w, h)[1].toFloat(),
+                    setDirection(color.direc, w, h)[2].toFloat(),
+                    setDirection(color.direc, w, h)[3].toFloat(),
+                    intArrayOf(
+                        UtilsBitmap.toRGBString(color.colorStart!!).toColorInt(),
+                        UtilsBitmap.toRGBString(color.colorEnd!!).toColorInt()
+                    ),
+                    floatArrayOf(0f, 1f),
+                    Shader.TileMode.MIRROR
+                )
+                paint.shader = shader
             }
-            val shader = LinearGradient(
-                setDirection(color.direc, w, h)[0].toFloat(),
-                setDirection(color.direc, w, h)[1].toFloat(),
-                setDirection(color.direc, w, h)[2].toFloat(),
-                setDirection(color.direc, w, h)[3].toFloat(),
-                intArrayOf(
-                    Color.parseColor(UtilsBitmap.toRGBString(color.colorStart)),
-                    Color.parseColor(UtilsBitmap.toRGBString(color.colorEnd))
-                ),
-                floatArrayOf(0f, 1f),
-                Shader.TileMode.MIRROR
-            )
-            paint.shader = shader
         }
     }
 

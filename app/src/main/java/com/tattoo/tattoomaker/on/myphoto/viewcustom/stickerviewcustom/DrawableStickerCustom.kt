@@ -1,20 +1,26 @@
 package com.tattoo.tattoomaker.on.myphoto.viewcustom.stickerviewcustom
 
 import android.content.Context
-import android.graphics.*
-import android.graphics.drawable.BitmapDrawable
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import androidx.annotation.IntRange
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.PathParser
+import androidx.core.graphics.scale
+import androidx.core.graphics.toColorInt
 import com.tattoo.tattoomaker.on.myphoto.R
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant
 import com.tattoo.tattoomaker.on.myphoto.model.ColorModel
-import com.tattoo.tattoomaker.on.myphoto.model.TattooModel
 import com.tattoo.tattoomaker.on.myphoto.model.ShadowModel
-import com.tattoo.tattoomaker.on.myphoto.model.TattooPremiumModel
+import com.tattoo.tattoomaker.on.myphoto.model.TattooModel
 import com.tattoo.tattoomaker.on.myphoto.utils.ColorFilterGenerator
-import com.tattoo.tattoomaker.on.myphoto.utils.Constant
 import com.tattoo.tattoomaker.on.myphoto.utils.UtilsAdjust
 import com.tattoo.tattoomaker.on.myphoto.utils.UtilsBitmap
 import com.tattoo.tattoomaker.on.myphoto.viewcustom.stickerviewcustom.stickerview.Sticker
@@ -38,21 +44,16 @@ open class DrawableStickerCustom(context: Context, o: Any?, id: Int, typeSticker
     private val paintBitmap = Paint(Paint.FILTER_BITMAP_FLAG)
 
     var isShadow = false
-    lateinit var tattooModel: TattooModel
-    lateinit var tattooPremiumModel: TattooPremiumModel
+    var tattooModel: TattooModel
 
     init {
         this.id = id
         this.context = context
         this.typeSticker = typeSticker
+        tattooModel = o as TattooModel
 
-        if (typeSticker == Constant.TATTOO) {
-            tattooModel = o as TattooModel
-            initTattoo()
-        } else if (typeSticker == Constant.TATTOO_PREMIUM) {
-            tattooPremiumModel = o as TattooPremiumModel
-            initTattooPremium()
-        }
+        if (typeSticker == Constant.TATTOO) initTattoo()
+        else if (typeSticker == Constant.TATTOO_PREMIUM) initTattooPremium()
     }
 
     /**
@@ -70,7 +71,7 @@ open class DrawableStickerCustom(context: Context, o: Any?, id: Int, typeSticker
             for (path in tattooModel.lstPathData) {
                 if (path == "evenOdd") pathTattoo!!.fillType = Path.FillType.EVEN_ODD
                 else if (path.contains("#"))
-                    paintTattoo!!.color = Color.parseColor(path)
+                    paintTattoo!!.color = path.toColorInt()
                 else pathTattoo!!.addPath(PathParser.createPathFromPathData(path))
             }
             scalePath()
@@ -102,18 +103,16 @@ open class DrawableStickerCustom(context: Context, o: Any?, id: Int, typeSticker
         if (drawable == null)
             drawable = ContextCompat.getDrawable(context, R.drawable.sticker_transparent_text)
 
-        val bm = UtilsBitmap.getBitmapFromAsset(context, tattooPremiumModel.folder, tattooPremiumModel.nameTattoo)
+        val bm = UtilsBitmap.getBitmapFromAsset(context, tattooModel.nameFolder, tattooModel.name)
 
         bm?.let {
             bitmap = if (it.width > it.height)
-                Bitmap.createScaledBitmap(it, 720, 720 * it.height / it.width, false)
-            else
-                Bitmap.createScaledBitmap(it, 720 * it.width / it.height, 720, false)
+                it.scale(720, 720 * it.height / it.width, false)
+            else it.scale(720 * it.width / it.height, 720, false)
         }
 
-
-        setColorFilter(tattooPremiumModel.colorFilter)
-        setAlpha(tattooPremiumModel.opacity)
+        setColorFilter(tattooModel.colorModel?.colorStart ?: Color.BLACK)
+        setAlpha(tattooModel.opacity)
 
         realBounds = RectF(
             distance.toFloat(),
@@ -215,21 +214,21 @@ open class DrawableStickerCustom(context: Context, o: Any?, id: Int, typeSticker
         UtilsAdjust.setColor(color, paintTattoo!!, width.toFloat(), height.toFloat())
     }
 
-    fun setColorFilter(color: Float): DrawableStickerCustom {
+    fun setColorFilter(color: Int): DrawableStickerCustom {
         paintBitmap.isFilterBitmap = true
-        paintBitmap.colorFilter = ColorFilterGenerator.adjustHue(color)
+        paintBitmap.colorFilter = ColorFilterGenerator.adjustHue(color.toFloat())
 
         return this
     }
 
-    fun setShadowPathShape(lstPath: ArrayList<String>) {
+    fun setShadowPathShape(lstPath: MutableList<String>) {
         if (rectFShadow == null) rectFShadow = RectF()
         if (shadowPath == null) shadowPath = Path()
 
         shadowPath!!.reset()
         for (path in lstPath) {
             if (path == "evenOdd") shadowPath!!.fillType = Path.FillType.EVEN_ODD
-            else if (path.contains("#")) shadowPaint?.let { it.color = Color.parseColor(path) }
+            else if (path.contains("#")) shadowPaint?.let { it.color = path.toColorInt() }
             else shadowPath!!.addPath(PathParser.createPathFromPathData(path))
         }
         shadowPath!!.computeBounds(rectFShadow!!, true)

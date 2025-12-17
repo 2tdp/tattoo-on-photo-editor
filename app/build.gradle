@@ -1,28 +1,38 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id("com.google.devtools.ksp")
+    id 'kotlin-parcelize'
+    id 'com.google.dagger.hilt.android'
 }
 
 android {
     namespace 'com.tattoo.tattoomaker.on.myphoto'
-    compileSdk 33
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.tattoo.tattoomaker.on.myphoto"
         minSdk 23
-        targetSdk 33
-        versionCode 1
-        versionName "1.0"
+        targetSdk 36
+        versionCode 100
+        versionName "1.0.0"
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        def formattedDate = new Date().format('MMM.dd.yyyy')
+        archivesBaseName = "2tdp_TatooEditor_v${versionName}(${versionCode})_${formattedDate}"
     }
 
     buildTypes {
+        debug {
+            minifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -30,18 +40,45 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+
+    buildFeatures {
+        buildConfig true
+        viewBinding true
+    }
+
+    bundle {
+        language {
+            enableSplit = false
+        }
+        density {
+            // This property is set to true by default.
+            enableSplit = true
+        }
+        abi {
+            // This property is set to true by default.
+            enableSplit = true
+        }
+    }
+
+    flavorDimensions += "default"
+    productFlavors {
+        develop {
+            buildConfigField "Long", "Minimum_Fetch", "5L"
+        }
+
+        production {
+            buildConfigField "Long", "Minimum_Fetch", "3600L"
+        }
+    }
 }
 
 dependencies {
 
-    implementation 'androidx.core:core-ktx:1.9.0'
-    implementation 'androidx.appcompat:appcompat:1.5.1'
-    implementation 'com.google.android.material:material:1.7.0'
+    implementation 'androidx.core:core-ktx:1.13.0'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation project(path: ':library')
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.4'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
 
     implementation "androidx.recyclerview:recyclerview:1.2.1"
     implementation "androidx.recyclerview:recyclerview-selection:1.1.0"
@@ -55,9 +92,25 @@ dependencies {
     implementation 'com.intuit.sdp:sdp-android:1.0.6'
     implementation 'com.intuit.ssp:ssp-android:1.0.6'
 
+    //Animations
+    //noinspection UseTomlInstead
+    implementation("com.daimajia.androidanimations:library:2.4@aar")
+
+    //Hilt
+    implementation 'com.google.dagger:hilt-android:2.57.1'
+    ksp 'com.google.dagger:hilt-compiler:2.57.1'
+
+    //Room
+    implementation "androidx.room:room-ktx:2.8.0"
+    implementation 'androidx.room:room-runtime:2.8.0'
+    annotationProcessor 'androidx.room:room-compiler:2.8.0'
+    ksp 'androidx.room:room-compiler:2.8.0'
+
     implementation 'com.otaliastudios:zoomlayout:1.9.0'
     implementation "codes.side:andcolorpicker:0.6.2"
     implementation 'com.github.QuadFlask:colorpicker:0.0.15'
     implementation 'com.makeramen:roundedimageview:2.3.0'
     implementation("com.vanniktech:android-image-cropper:4.5.0")
+
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
 }

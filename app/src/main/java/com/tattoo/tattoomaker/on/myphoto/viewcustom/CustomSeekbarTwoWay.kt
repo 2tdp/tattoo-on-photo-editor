@@ -5,13 +5,23 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.ContextCompat
 import com.tattoo.tattoomaker.on.myphoto.R
 import com.remi.textonphoto.writeonphoto.addtext.customview.OnSeekbarResult
 
-class CustomSeekbarTwoWay(context: Context) : View(context) {
+class CustomSeekbarTwoWay : View {
+
+    constructor(context: Context) : super(context)
+    constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
+    constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr
+    )
+
 
     companion object {
         var w = 0F

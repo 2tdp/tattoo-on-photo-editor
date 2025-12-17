@@ -21,13 +21,11 @@ import com.tattoo.tattoomaker.on.myphoto.model.text.TextModel
 import com.tattoo.tattoomaker.on.myphoto.utils.UtilsAdjust
 import com.tattoo.tattoomaker.on.myphoto.utils.UtilsBitmap
 import com.tattoo.tattoomaker.on.myphoto.viewcustom.stickerviewcustom.stickerview.Sticker
+import androidx.core.graphics.withMatrix
+import androidx.core.graphics.toColorInt
 
 
-open class TextStickerCustom(context: Context, textModel: TextModel, id: Int) : Sticker() {
-
-    private val context: Context
-    private var textModel: TextModel
-    val id: Int
+open class TextStickerCustom(private val context: Context, private var textModel: TextModel, private val id: Int) : Sticker() {
 
     private var realBounds: Rect? = null
     private var textRect: Rect? = null
@@ -60,10 +58,6 @@ open class TextStickerCustom(context: Context, textModel: TextModel, id: Int) : 
     private var lineSpacingExtra = 0.0f
 
     init {
-        this.id = id
-        this.context = context
-        this.textModel = textModel
-
         init()
         setData(textModel)
     }
@@ -102,41 +96,38 @@ open class TextStickerCustom(context: Context, textModel: TextModel, id: Int) : 
     override fun draw(canvas: Canvas) {
         if (staticLayout == null) return
 
-        canvas.save()
-        canvas.concat(matrix)
-        drawable!!.bounds = realBounds!!
-        drawable!!.draw(canvas)
-        canvas.restore()
+        canvas.withMatrix(matrix) {
+            drawable!!.bounds = realBounds!!
+            drawable!!.draw(this)
+        }
 
         //shadow
-        canvas.save()
-        canvas.concat(matrix)
-        if (textRect!!.width() == width) {
-            val dy = height / 2 - staticLayoutShadow.height / 2
-            // center vertical
-            canvas.translate(0f, dy.toFloat())
-        } else {
-            val dx = textRect!!.left
-            val dy = textRect!!.top + textRect!!.height() / 2 - staticLayoutShadow.height / 2
-            canvas.translate(dx.toFloat(), dy.toFloat())
+        canvas.withMatrix(matrix) {
+            if (textRect!!.width() == width) {
+                val dy = height / 2 - staticLayoutShadow.height / 2
+                // center vertical
+                translate(0f, dy.toFloat())
+            } else {
+                val dx = textRect!!.left
+                val dy = textRect!!.top + textRect!!.height() / 2 - staticLayoutShadow.height / 2
+                translate(dx.toFloat(), dy.toFloat())
+            }
+            staticLayoutShadow.draw(this)
         }
-        staticLayoutShadow.draw(canvas)
-        canvas.restore()
 
         //text
-        canvas.save()
-        canvas.concat(matrix)
-        if (textRect!!.width() == width) {
-            val dy = height / 2 - staticLayout!!.height / 2
-            // center vertical
-            canvas.translate(0f, dy.toFloat())
-        } else {
-            val dx = textRect!!.left
-            val dy = textRect!!.top + textRect!!.height() / 2 - staticLayout!!.height / 2
-            canvas.translate(dx.toFloat(), dy.toFloat())
+        canvas.withMatrix(matrix) {
+            if (textRect!!.width() == width) {
+                val dy = height / 2 - staticLayout!!.height / 2
+                // center vertical
+                translate(0f, dy.toFloat())
+            } else {
+                val dx = textRect!!.left
+                val dy = textRect!!.top + textRect!!.height() / 2 - staticLayout!!.height / 2
+                translate(dx.toFloat(), dy.toFloat())
+            }
+            staticLayout!!.draw(this)
         }
-        staticLayout!!.draw(canvas)
-        canvas.restore()
     }
 
     fun setText(str: String): TextStickerCustom {
@@ -349,7 +340,7 @@ open class TextStickerCustom(context: Context, textModel: TextModel, id: Int) : 
             textModel.shadowModel!!.blur,
             textModel.shadowModel!!.xPos,
             textModel.shadowModel!!.yPos,
-            Color.parseColor(UtilsBitmap.toARGBString(alpha, shadowPaint!!.color)))
+            UtilsBitmap.toARGBString(alpha, shadowPaint!!.color).toColorInt())
 
         return this
     }

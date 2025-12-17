@@ -7,14 +7,14 @@ import java.util.ArrayList
 
 object DataFilter {
 
-    fun getDataFilter(bitmap: Bitmap): ArrayList<FilterModel> {
-        val lstFilter = ArrayList<FilterModel>()
+    fun getDataFilter(bitmap: Bitmap): MutableList<Any> {
+        val lstFilter = mutableListOf<FilterModel>()
         var bm: Bitmap
         for (s in FILTER_NAMES) {
             bm = CGENativeLibrary.cgeFilterImage_MultipleEffects(bitmap, "@adjust lut $s", 0.8f)
             lstFilter.add(FilterModel(bm, s.replace(".png", ""), s, false))
         }
-        return lstFilter
+        return mutableListOf<Any>().apply { addAll(lstFilter) }
     }
 
     val FILTER_NAMES = arrayOf(

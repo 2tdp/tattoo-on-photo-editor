@@ -2,33 +2,24 @@ package com.tattoo.tattoomaker.on.myphoto.adapter
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.net.Uri
-import android.util.Log
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.makeramen.roundedimageview.RoundedImageView
+import com.tattoo.tattoomaker.on.myphoto.MyApp
 import com.tattoo.tattoomaker.on.myphoto.R
 import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackItem
 import com.tattoo.tattoomaker.on.myphoto.model.picture.PicModel
-import com.tattoo.tattoomaker.on.myphoto.utils.Constant
+import dagger.hilt.android.qualifiers.ActivityContext
+import javax.inject.Inject
+import kotlin.collections.isNotEmpty
+import kotlin.collections.reverse
 
-class ChooseBackgroundAdapter(context: Context, callBack: ICallBackItem): RecyclerView.Adapter<ChooseBackgroundAdapter.ChooseBackgroundHolder>() {
+class ChooseBackgroundAdapter @Inject constructor(@ActivityContext private val context: Context): RecyclerView.Adapter<ChooseBackgroundAdapter.ChooseBackgroundHolder>() {
 
-    private val context: Context
-    private val callBack: ICallBackItem
-    private var lstPic: ArrayList<PicModel>
-
-    private var w = 0F
-
-    init {
-        this.context = context
-        this.callBack = callBack
-
-        w = context.resources.displayMetrics.widthPixels / 100f
-        lstPic = ArrayList()
-    }
+    var callBack: ICallBackItem? = null
+    private var lstPic: MutableList<PicModel> = mutableListOf()
 
     fun setData(lstPic : ArrayList<PicModel>) {
         this.lstPic = lstPic
@@ -55,13 +46,13 @@ class ChooseBackgroundAdapter(context: Context, callBack: ICallBackItem): Recycl
         init {
             itemView.apply {
                 scaleType = ImageView.ScaleType.CENTER_CROP
-                cornerRadius = 2.5f * w
+                cornerRadius = 2.5f * MyApp.w
             }
             itemView.layoutParams =
-                RecyclerView.LayoutParams((27.778f * w).toInt(), (41.667f * w).toInt()).apply {
-                    leftMargin = (1.94f * w).toInt()
-                    rightMargin = (1.94f * w).toInt()
-                    bottomMargin = (4.44f * w).toInt()
+                RecyclerView.LayoutParams((27.778f * MyApp.w).toInt(), (41.667f * MyApp.w).toInt()).apply {
+                    leftMargin = (1.94f * MyApp.w).toInt()
+                    rightMargin = (1.94f * MyApp.w).toInt()
+                    bottomMargin = (4.44f * MyApp.w).toInt()
                 }
         }
 
@@ -81,7 +72,7 @@ class ChooseBackgroundAdapter(context: Context, callBack: ICallBackItem): Recycl
                     .placeholder(R.drawable.im_place_holder_rec)
                     .into(itemView as ImageView)
 
-            itemView.setOnClickListener { callBack.callBack(picture, position) }
+            itemView.setOnClickListener { callBack?.callBack(picture, position) }
         }
     }
 
