@@ -3,6 +3,7 @@ package com.tattoo.tattoomaker.on.myphoto.sharepref
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.tattoo.tattoomaker.on.myphoto.model.LanguageModel
 import com.tattoo.tattoomaker.on.myphoto.model.MultiTattooPremiumModel
 import com.tattoo.tattoomaker.on.myphoto.model.ProjectModel
 import com.tattoo.tattoomaker.on.myphoto.model.picture.BucketPicModel
@@ -58,6 +59,21 @@ class DataLocalManager {
 
         fun getInt(key: String?): Int {
             return getInstance()!!.mySharedPreferences!!.getIntWithKey(key, -1)
+        }
+
+        fun setLanguage(key: String, lang: LanguageModel) {
+            getInstance()!!.mySharedPreferences?.putStringwithKey(key, Gson().toJsonTree(lang).asJsonObject.toString())
+        }
+
+        fun getLanguage(key: String): LanguageModel? {
+            val strJson = getInstance()!!.mySharedPreferences!!.getStringwithKey(key, "")!!
+            var lang: LanguageModel? = null
+            try {
+                lang = Gson().fromJson(JSONObject(strJson).toString(), LanguageModel::class.java)
+            } catch (e: JSONException) {
+                e.printStackTrace()
+            }
+            return lang
         }
 
         fun setPicture(picture: PicModel, key: String?) {

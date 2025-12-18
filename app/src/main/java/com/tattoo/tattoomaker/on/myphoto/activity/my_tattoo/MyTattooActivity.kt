@@ -1,7 +1,6 @@
-package com.tattoo.tattoomaker.on.myphoto.activity
+package com.tattoo.tattoomaker.on.myphoto.activity.my_tattoo
 
 import android.app.AlertDialog
-import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
@@ -9,40 +8,71 @@ import android.widget.Toast
 import androidx.viewpager2.widget.ViewPager2
 import com.tattoo.tattoomaker.on.myphoto.R
 import com.tattoo.tattoomaker.on.myphoto.activity.base.BaseActivity
+import com.tattoo.tattoomaker.on.myphoto.activity.edit.EditActivity
+import com.tattoo.tattoomaker.on.myphoto.activity.my_tattoo.fragment.CompletedFragment
+import com.tattoo.tattoomaker.on.myphoto.activity.my_tattoo.fragment.DraftsFragment
 import com.tattoo.tattoomaker.on.myphoto.adapter.ViewPagerAddFragmentsAdapter
-import com.tattoo.tattoomaker.on.myphoto.addview.ViewMyStory
-import com.tattoo.tattoomaker.on.myphoto.addview.viewdialog.ViewDialogText
 import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackCheck
 import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackItem
+import com.tattoo.tattoomaker.on.myphoto.databinding.ActivityMyTattooBinding
 import com.tattoo.tattoomaker.on.myphoto.fragment.ItemMyStoryFragment
-import com.tattoo.tattoomaker.on.myphoto.fragment.PreviewFragment
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant
 import com.tattoo.tattoomaker.on.myphoto.model.ProjectModel
 import com.tattoo.tattoomaker.on.myphoto.sharepref.DataLocalManager
-import com.tattoo.tattoomaker.on.myphoto.helper.Constant
 import com.tattoo.tattoomaker.on.myphoto.utils.Utils
 
-class MyTattooActivity: BaseActivity() {
+class MyTattooActivity: BaseActivity<ActivityMyTattooBinding>(ActivityMyTattooBinding::inflate) {
 
-    private lateinit var viewMyStory: ViewMyStory
+    override fun handleKeyboardUi(isVisible: Boolean, imeHeight: Int) {
 
-    private var completeItemFragment: ItemMyStoryFragment? = null
-    private var draftItemFragment: ItemMyStoryFragment? = null
+    }
+
+    private val completeItemFragment: CompletedFragment by lazy { CompletedFragment.newInstance() }
+    private val draftItemFragment: DraftsFragment by lazy { DraftsFragment.newInstance() }
     private var lstComplete = ArrayList<ProjectModel>()
     private var lstDraft = ArrayList<ProjectModel>()
     private var isDel = false
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        viewMyStory = ViewMyStory(this@MyTattooActivity)
-        setContentView(viewMyStory)
+    override fun setUp() {
+        binding.viewPager.apply {
+            adapter = ViewPagerAddFragmentsAdapter(supportFragmentManager, lifecycle).apply {
+                addFrag(completeItemFragment)
+                addFrag(draftItemFragment)
+            }
+            registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    viewMyStory.clickOption(position)
+                }
+            })
+        }
 
-        setData()
+        lstComplete = DataLocalManager.Companion.getListProject(this@MyTattooActivity, Constant.LIST_COMPLETE)
+        completeItemFragment = ItemMyStoryFragment.Companion.newInstance(lstComplete, 0, object :
+            ICallBackItem {
+            override fun callBack(ob: Any?, position: Int) {
+                if (position > -1) goToPreview(ob, 3)
+                else {
+                    viewMyStory.viewToolbar.ivRight.setImageResource(R.drawable.ic_del)
+                    isDel = true
+                }
+            }
+        })
+
+        lstDraft = DataLocalManager.Companion.getListProject(this@MyTattooActivity, Constant.LIST_DRAFT)
+        draftItemFragment = ItemMyStoryFragment.Companion.newInstance(lstDraft, 1, object :
+            ICallBackItem {
+            override fun callBack(ob: Any?, position: Int) {
+                if (position > -1) goToPreview(ob, 1)
+                else {
+                    viewMyStory.viewToolbar.ivRight.setImageResource(R.drawable.ic_del)
+                    isDel = true
+                }
+            }
+        })
+
+
+
         evenClick()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        setData()
     }
 
     private fun evenClick() {
@@ -83,54 +113,18 @@ class MyTattooActivity: BaseActivity() {
         viewMyStory.viewToolbar.ivBack.setOnClickListener { finish() }
     }
 
-    private fun setData() {
-        val viewPagerAdapter = ViewPagerAddFragmentsAdapter(supportFragmentManager, lifecycle)
-
-        lstComplete = DataLocalManager.getListProject(this@MyTattooActivity, Constant.LIST_COMPLETE)
-        completeItemFragment = ItemMyStoryFragment.newInstance(lstComplete, 0, object : ICallBackItem {
-            override fun callBack(ob: Any, position: Int) {
-                if (position > -1) goToPreview(ob, 3)
-                else {
-                    viewMyStory.viewToolbar.ivRight.setImageResource(R.drawable.ic_del)
-                    isDel = true
-                }
-            }
-        })
-        viewPagerAdapter.addFrag(completeItemFragment!!)
-
-        lstDraft = DataLocalManager.getListProject(this@MyTattooActivity, Constant.LIST_DRAFT)
-        draftItemFragment = ItemMyStoryFragment.newInstance(lstDraft, 1, object : ICallBackItem {
-            override fun callBack(ob: Any, position: Int) {
-                if (position > -1) goToPreview(ob, 1)
-                else {
-                    viewMyStory.viewToolbar.ivRight.setImageResource(R.drawable.ic_del)
-                    isDel = true
-                }
-            }
-        })
-        viewPagerAdapter.addFrag(draftItemFragment!!)
-
-        viewMyStory.viewPager.adapter = viewPagerAdapter
-
-        viewMyStory.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                viewMyStory.clickOption(position)
-            }
-        })
-    }
-
     private fun goToPreview(ob: Any, type: Int) {
         val previewFragment =
             PreviewFragment.newInstance(ob as ProjectModel, type, object : ICallBackCheck {
             override fun check(isCheck: Boolean) {
                 if (!isCheck) {
-                    DataLocalManager.setProject(ob, Constant.PROJECT)
+                    DataLocalManager.Companion.setProject(ob, Constant.PROJECT)
 
                     setIntent(EditActivity::class.java.name, false)
                 } else setData()
             }
         })
-        replaceFragment(supportFragmentManager, previewFragment, true, true, true)
+        Utils.replaceFragment(supportFragmentManager, previewFragment, true, true, true)
     }
 
     private fun showDialogDel(lstDel: ArrayList<ProjectModel>) {
@@ -164,7 +158,7 @@ class MyTattooActivity: BaseActivity() {
                         viewMyStory.viewLoading.visibility = View.GONE
                         viewMyStory.viewToolbar.ivRight.setImageResource(R.drawable.ic_item_tick)
 
-                        DataLocalManager.setListProject(this@MyTattooActivity, lstComplete, Constant.LIST_COMPLETE)
+                        DataLocalManager.Companion.setListProject(this@MyTattooActivity, lstComplete, Constant.LIST_COMPLETE)
                         setData()
                         dialog.cancel()
                     }
@@ -181,7 +175,7 @@ class MyTattooActivity: BaseActivity() {
                         viewMyStory.viewLoading.visibility = View.GONE
                         viewMyStory.viewToolbar.ivRight.setImageResource(R.drawable.ic_item_tick)
 
-                        DataLocalManager.setListProject(this@MyTattooActivity, lstDraft, Constant.LIST_DRAFT)
+                        DataLocalManager.Companion.setListProject(this@MyTattooActivity, lstDraft, Constant.LIST_DRAFT)
                         setData()
                         dialog.cancel()
                     }

@@ -18,6 +18,7 @@ object Constant {
 
     //project
     const val PROJECT = "project"
+    const val PROJECT_SUCCESS = "project_success"
     const val LIST_COMPLETE = "lstComplete"
     const val LIST_DRAFT = "lstDraft"
     const val NUMB_PROJECT = "numbProject"

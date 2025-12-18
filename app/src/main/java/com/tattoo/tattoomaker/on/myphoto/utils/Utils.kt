@@ -34,6 +34,7 @@ import java.io.*
 import java.lang.Exception
 import java.lang.StringBuilder
 import java.util.*
+import androidx.core.net.toUri
 
 object Utils {
     const val res = android.R.id.content
@@ -259,57 +260,51 @@ object Utils {
         return Typeface.createFromAsset(context.assets, "fonts/$fontFolder/$nameFont")
     }
 
-    fun saveImage(context: Context, bitmap: Bitmap?, namePic: String) {
+    fun saveImage(context: Context, bitmap: Bitmap, namePic: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            if (bitmap != null) {
+            val fileName = makeFilename(context, "$namePic-IMG-${Calendar.getInstance(Locale.getDefault()).time}")
+            val outFile = File(fileName)
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, outFile.name)
+                put(MediaStore.MediaColumns.MIME_TYPE, getMIMEType(outFile.path))
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+            }
+            val contentResolver = context.applicationContext.contentResolver
+            val contentUri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+            var newUri: Uri? = null
+            try {
+                newUri = contentResolver.insert(contentUri, values)
+                contentResolver.openOutputStream(newUri!!)?.let {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+                }
+            } catch (e: IOException) {
+                contentResolver.delete(newUri!!, null, null)
+            }
+        } else {
+            try {
                 val fileName = makeFilename(context, "$namePic-IMG-${Calendar.getInstance(Locale.getDefault()).time}")
                 val outFile = File(fileName)
                 val values = ContentValues().apply {
-                    put(MediaStore.MediaColumns.DISPLAY_NAME, outFile.name)
-                    put(MediaStore.MediaColumns.MIME_TYPE, getMIMEType(outFile.path))
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                    put(MediaStore.Images.Media.DISPLAY_NAME, outFile.name)
+                    put(MediaStore.Images.Media.MIME_TYPE, getMIMEType(outFile.path))
+                    put(MediaStore.MediaColumns.DATA, outFile.path)
                 }
-                val contentResolver = context.applicationContext.contentResolver
-                val contentUri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
-                var newUri: Uri? = null
-                val output: OutputStream?
+                val contentResolver = context.contentResolver
+                val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
                 try {
-                    newUri = contentResolver.insert(contentUri, values)
-                    contentResolver.openOutputStream(newUri!!)?.let {
+                    contentResolver.openOutputStream(uri!!)?.let {
                         bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
                     }
                 } catch (e: IOException) {
-                    contentResolver.delete(newUri!!, null, null)
+                    if (uri != null) contentResolver.delete(uri, null, null)
                 }
-            }
-        } else {
-            if (bitmap != null) {
-                try {
-                    val fileName = makeFilename(context, "$namePic-IMG-${Calendar.getInstance(Locale.getDefault()).time}")
-                    val outFile = File(fileName)
-                    val values = ContentValues().apply {
-                        put(MediaStore.Images.Media.DISPLAY_NAME, outFile.name)
-                        put(MediaStore.Images.Media.MIME_TYPE, getMIMEType(outFile.path))
-                        put(MediaStore.MediaColumns.DATA, outFile.path)
-                    }
-                    val contentResolver = context.contentResolver
-                    val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-                    val output: OutputStream?
-                    try {
-                        contentResolver.openOutputStream(uri!!)?.let {
-                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
-                        }
-                    } catch (e: IOException) {
-                        if (uri != null) contentResolver.delete(uri, null, null)
-                    }
-                } catch (e: java.lang.Exception) {
-                    Log.d("onBtnSavePng", e.toString()) // java.io.IOException: Operation not permitted
-                }
+            } catch (e: Exception) {
+                Log.d("onBtnSavePng", e.toString()) // java.io.IOException: Operation not permitted
             }
         }
     }
 
-    fun makeFilename(context: Context, namePic: String): String? {
+    fun makeFilename(context: Context, namePic: String): String {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             return getStore(context) + "/" + namePic + ".png"
         var externalRootDir = Environment.getExternalStorageDirectory().path
@@ -326,12 +321,12 @@ object Utils {
 
         // Turn the title into a filename
         val filename = StringBuilder()
-        for (i in 0 until "remi-tattoo-on-photo".length) {
-            if (Character.isLetterOrDigit("remi-tattoo-on-photo"[i])) filename.append("remi-tattoo-on-photo"[i])
+        for (i in 0 until "tattoo-on-photo".length) {
+            if (Character.isLetterOrDigit("tattoo-on-photo"[i])) filename.append("tattoo-on-photo"[i])
         }
 
         // Try to make the filename unique
-        var path: String? = null
+        var path = ""
         for (i in 0..99) {
             val testPath = if (i > 0) "$parentDir$filename$i.png" else "$parentDir$filename.png"
             try {
@@ -364,7 +359,7 @@ object Utils {
         try {
             val applicationInfo: ApplicationInfo = c.packageManager.getApplicationInfo("com.facebook.katana", 0)
             if (applicationInfo.enabled) {
-                val uri = Uri.parse("fb://page/" + "111335474750038")
+                val uri = ("fb://page/" + "111335474750038").toUri()
                 val intent = Intent(Intent.ACTION_VIEW, uri)
                 c.startActivity(intent)
             }
@@ -376,7 +371,7 @@ object Utils {
     fun openLink(c: Context, url: String) {
         try {
             val i = Intent(Intent.ACTION_VIEW)
-            i.setData(Uri.parse(url.replace("HTTPS", "https")))
+            i.setData(url.replace("HTTPS", "https").toUri())
             c.startActivity(i)
         } catch (e: ActivityNotFoundException) {
             Toast.makeText(c, c.getString(R.string.error), Toast.LENGTH_SHORT).show()
@@ -384,8 +379,8 @@ object Utils {
     }
 
     fun openInstagram(c: Context) {
-        val appUri = Uri.parse("https://instagram.com/_u/" + "remi_studio_app/")
-        val browserUri = Uri.parse("https://instagram.com/" + "remi_studio_app/")
+        val appUri = ("https://instagram.com/_u/" + "2tdp_dev_builder/").toUri()
+        val browserUri = ("https://instagram.com/" + "2tdp_dev_builder/").toUri()
         try { //first try to open in instagram app
             val appIntent: Intent? = c.packageManager.getLaunchIntentForPackage("com.instagram.android")
             if (appIntent != null) {
@@ -404,7 +399,8 @@ object Utils {
 
     fun rateApp(context: Context) {
         val intent = Intent(Intent.ACTION_VIEW)
-        intent.data = Uri.parse("https://play.google.com/store/apps/details?id=" + context.packageName)
+        intent.data =
+            ("https://play.google.com/store/apps/details?id=" + context.packageName).toUri()
         context.startActivity(intent)
     }
 
@@ -424,7 +420,7 @@ object Utils {
 
     fun sendFeedback(context: Context) {
         val selectorIntent = Intent(Intent.ACTION_SENDTO)
-        selectorIntent.data = Uri.parse("mailto:")
+        selectorIntent.data = "mailto:".toUri()
         val emailIntent = Intent(Intent.ACTION_SEND)
         emailIntent.putExtra(Intent.EXTRA_EMAIL, arrayOf(Constant.GMAIL))
         emailIntent.putExtra(Intent.EXTRA_SUBJECT, context.resources.getString(R.string.app_name) + " feedback")
@@ -439,15 +435,15 @@ object Utils {
 
     fun moreApps(context: Context) {
         try {
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=pub:" + Constant.NAME_DEV)))
+            context.startActivity(Intent(Intent.ACTION_VIEW, ("market://search?q=pub:" + Constant.NAME_DEV).toUri()))
         } catch (anfe: ActivityNotFoundException) {
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/search?q=pub:" + Constant.NAME_DEV)))
+            context.startActivity(Intent(Intent.ACTION_VIEW, ("http://play.google.com/store/search?q=pub:" + Constant.NAME_DEV).toUri()))
         }
     }
 
     fun privacyApp(context: Context) {
         val linkPrivacy = "https://myweatherforecastandwidget.blogspot.com/"
-        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(linkPrivacy))
+        val browserIntent = Intent(Intent.ACTION_VIEW, linkPrivacy.toUri())
         context.startActivity(browserIntent)
     }
 
@@ -466,7 +462,7 @@ object Utils {
         //TODO - Should be processed in another thread
         var uri: Uri? = null
         try {
-            val file = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "remi-tattoo-editor.png")
+            val file = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "tattoo-editor.png")
             val stream = FileOutputStream(file)
             image.compress(Bitmap.CompressFormat.PNG, 100, stream)
             stream.close()

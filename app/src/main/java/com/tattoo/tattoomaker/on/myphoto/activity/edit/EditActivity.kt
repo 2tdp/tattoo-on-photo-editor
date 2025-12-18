@@ -1,5 +1,6 @@
-package com.tattoo.tattoomaker.on.myphoto.activity
+package com.tattoo.tattoomaker.on.myphoto.activity.edit
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
@@ -11,7 +12,6 @@ import android.widget.ImageView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.graphics.scale
-import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -19,13 +19,11 @@ import codes.side.andcolorpicker.model.IntegerHSLColor
 import codes.side.andcolorpicker.view.picker.ColorSeekBar
 import com.remi.textonphoto.writeonphoto.addtext.customview.OnSeekbarResult
 import com.tattoo.tattoomaker.on.myphoto.R
+import com.tattoo.tattoomaker.on.myphoto.activity.SuccessActivity
 import com.tattoo.tattoomaker.on.myphoto.activity.base.BaseActivity
-import com.tattoo.tattoomaker.on.myphoto.activity.edit.AddTextDialog
-import com.tattoo.tattoomaker.on.myphoto.activity.edit.CropImageDialog
 import com.tattoo.tattoomaker.on.myphoto.adapter.ColorAdapter
 import com.tattoo.tattoomaker.on.myphoto.adapter.ImageAdapter
 import com.tattoo.tattoomaker.on.myphoto.adapter.TattooAdapter
-import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackCheck
 import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackItem
 import com.tattoo.tattoomaker.on.myphoto.data.DataColor
 import com.tattoo.tattoomaker.on.myphoto.data.DataFilter
@@ -39,18 +37,21 @@ import com.tattoo.tattoomaker.on.myphoto.extensions.setUpDialog
 import com.tattoo.tattoomaker.on.myphoto.extensions.showToast
 import com.tattoo.tattoomaker.on.myphoto.extensions.slideInUp
 import com.tattoo.tattoomaker.on.myphoto.extensions.slideOutDown
+import com.tattoo.tattoomaker.on.myphoto.extensions.toJson
 import com.tattoo.tattoomaker.on.myphoto.extensions.visible
-import com.tattoo.tattoomaker.on.myphoto.fragment.PreviewFragment
 import com.tattoo.tattoomaker.on.myphoto.helper.Constant
-import com.tattoo.tattoomaker.on.myphoto.helper.Constant.FROM_ASSETS
-import com.tattoo.tattoomaker.on.myphoto.model.*
+import com.tattoo.tattoomaker.on.myphoto.model.ColorModel
+import com.tattoo.tattoomaker.on.myphoto.model.FilterModel
+import com.tattoo.tattoomaker.on.myphoto.model.FrameModel
+import com.tattoo.tattoomaker.on.myphoto.model.ProjectModel
+import com.tattoo.tattoomaker.on.myphoto.model.TattooModel
+import com.tattoo.tattoomaker.on.myphoto.model.UndoRedoModel
 import com.tattoo.tattoomaker.on.myphoto.model.background.AdjustModel
 import com.tattoo.tattoomaker.on.myphoto.model.background.BackgroundModel
 import com.tattoo.tattoomaker.on.myphoto.model.text.TextModel
 import com.tattoo.tattoomaker.on.myphoto.sharepref.DataLocalManager
 import com.tattoo.tattoomaker.on.myphoto.undoredo.UndoRedo
 import com.tattoo.tattoomaker.on.myphoto.utils.Utils
-import com.tattoo.tattoomaker.on.myphoto.utils.Utils.replaceFragment
 import com.tattoo.tattoomaker.on.myphoto.utils.UtilsAdjust
 import com.tattoo.tattoomaker.on.myphoto.utils.UtilsBitmap
 import com.tattoo.tattoomaker.on.myphoto.viewcustom.stickerviewcustom.DrawableStickerCustom
@@ -162,19 +163,19 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
     override fun onResume() {
         super.onResume()
 
-        project = DataLocalManager.getProject(Constant.PROJECT)
+        project = DataLocalManager.Companion.getProject(Constant.PROJECT)
         if (project == null) cropBackground()
         else {
             showLoading(false)
             isProject = true
-            indexProject = DataLocalManager.getInt("indexProject")
+            indexProject = DataLocalManager.Companion.getInt("indexProject")
             project?.let { pro ->
                 backgroundModel = pro.backgroundModel
                 backgroundModel?.let { bg -> setBackground(bg, null) }
             }
             addMatrixProject()
 
-            DataLocalManager.setProject(null, Constant.PROJECT)
+            DataLocalManager.Companion.setProject(null, Constant.PROJECT)
         }
     }
 
@@ -183,14 +184,14 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
      */
     private fun createProject() {
         Thread {
-            val numberCurrentProject = DataLocalManager.getInt(Constant.NUMB_PROJECT)
-            if (DataLocalManager.getInt(Constant.NUMB_PROJECT) == -1)
-                DataLocalManager.setInt(1, Constant.NUMB_PROJECT)
+            val numberCurrentProject = DataLocalManager.Companion.getInt(Constant.NUMB_PROJECT)
+            if (DataLocalManager.Companion.getInt(Constant.NUMB_PROJECT) == -1)
+                DataLocalManager.Companion.setInt(1, Constant.NUMB_PROJECT)
             else
-                DataLocalManager.setInt(numberCurrentProject + 1, Constant.NUMB_PROJECT)
+                DataLocalManager.Companion.setInt(numberCurrentProject + 1, Constant.NUMB_PROJECT)
 
             nameFolder =
-                Constant.NUMB_PROJECT + "_" + DataLocalManager.getInt(Constant.NUMB_PROJECT)
+                Constant.NUMB_PROJECT + "_" + DataLocalManager.Companion.getInt(Constant.NUMB_PROJECT)
             Utils.makeFolder(this, nameFolder)
             val file = File(Utils.getStore(this@EditActivity), nameFolder)
             if (file.exists()) {
@@ -203,8 +204,8 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
     }
 
     private fun cropBackground() {
-        DataLocalManager.getPicture(Constant.BACKGROUND_PICTURE)?.let { pic ->
-            val fromAssets = intent.getBooleanExtra(FROM_ASSETS, false)
+        DataLocalManager.Companion.getPicture(Constant.BACKGROUND_PICTURE)?.let { pic ->
+            val fromAssets = intent.getBooleanExtra(Constant.FROM_ASSETS, false)
             val dialogCrop = CropImageDialog(this, fromAssets, pic.uri).apply {
                 callBack = object : ICallBackItem {
                     override fun callBack(ob: Any?, position: Int) {
@@ -292,14 +293,12 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
         binding.ivExport.setOnClickListener {
             saveProject(Constant.LIST_COMPLETE, object : ICallBackItem {
                 override fun callBack(ob: Any?, position: Int) {
-                    showToast(resources.getString(R.string.done), Gravity.BOTTOM)
-                    previewFragment =
-                        PreviewFragment.newInstance(ob as ProjectModel, 0, object : ICallBackCheck {
-                        override fun check(isCheck: Boolean) {
-                            finish()
-                        }
-                    })
-                    replaceFragment(supportFragmentManager, previewFragment!!, true, true, true)
+                    ob?.let {
+                        showToast(resources.getString(R.string.done), Gravity.BOTTOM)
+                        startIntent(Intent(this@EditActivity, SuccessActivity::class.java).apply {
+                            putExtra(Constant.PROJECT_SUCCESS, ob.toJson())
+                        }, true)
+                    }
                 }
             })
         }
@@ -432,7 +431,11 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
 
                 rcvFilter.apply {
                     layoutManager =
-                        LinearLayoutManager(this@EditActivity, LinearLayoutManager.HORIZONTAL, false)
+                        LinearLayoutManager(
+                            this@EditActivity,
+                            LinearLayoutManager.HORIZONTAL,
+                            false
+                        )
                     adapter = filterAdapter
                 }
             }
@@ -583,10 +586,10 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
                 if (sticker is DrawableStickerCustom) project.lstTattooModel.add(sticker.tattooModel)
                 else if (sticker is TextStickerCustom) project.lstTextModel.add(sticker.getTextModel())
             }
-            val lstProject = DataLocalManager.getListProject(this@EditActivity, name)
+            val lstProject = DataLocalManager.Companion.getListProject(this@EditActivity, name)
             if (indexProject == -1) lstProject.add(0, project)
             else lstProject[indexProject] = project
-            DataLocalManager.setListProject(this@EditActivity, lstProject, name)
+            DataLocalManager.Companion.setListProject(this@EditActivity, lstProject, name)
 
             withContext(Dispatchers.Main) {
                 hideLoading()
@@ -726,7 +729,8 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
                 override fun callBack(ob: Any?, position: Int) {
                     if (ob is ColorModel) {
                         if (ob.colorEnd == null && ob.colorStart == null) {
-                            DataColor.showDialogPickColor(this@EditActivity, object : ICallBackItem {
+                            DataColor.showDialogPickColor(this@EditActivity, object :
+                                ICallBackItem {
                                 override fun callBack(ob: Any?, position: Int) {
                                     drawableSticker.setColor(ob as ColorModel)
                                     binding.vSticker.invalidate()
@@ -894,7 +898,8 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
                 override fun callBack(ob: Any?, position: Int) {
                     if (ob is ColorModel) {
                         if (ob.colorEnd == null && ob.colorStart == null)
-                            DataColor.showDialogPickColor(this@EditActivity, object : ICallBackItem {
+                            DataColor.showDialogPickColor(this@EditActivity, object :
+                                ICallBackItem {
                                 override fun callBack(ob: Any?, position: Int) {
                                     textSticker.setTextColor(ob as ColorModel)
                                     binding.vSticker.invalidate()
@@ -969,7 +974,8 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
                 override fun callBack(ob: Any?, position: Int) {
                     if (ob is ColorModel) {
                         if (ob.colorStart == null && ob.colorEnd == null) {
-                            DataColor.showDialogPickColor(this@EditActivity, object : ICallBackItem {
+                            DataColor.showDialogPickColor(this@EditActivity, object :
+                                ICallBackItem {
                                 override fun callBack(ob: Any?, position: Int) {
                                     textSticker.setTextColor(ob as ColorModel)
                                     binding.vSticker.invalidate()

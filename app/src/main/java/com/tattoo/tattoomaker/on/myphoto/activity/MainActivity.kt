@@ -5,6 +5,8 @@ import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.activity.OnBackPressedCallback
 import com.tattoo.tattoomaker.on.myphoto.activity.base.BaseActivity
+import com.tattoo.tattoomaker.on.myphoto.activity.edit.ChooseImageActivity
+import com.tattoo.tattoomaker.on.myphoto.activity.my_tattoo.MyTattooActivity
 import com.tattoo.tattoomaker.on.myphoto.databinding.ActivityMainBinding
 import com.tattoo.tattoomaker.on.myphoto.extensions.setOnUnDoubleClickListener
 import com.tattoo.tattoomaker.on.myphoto.helper.Constant

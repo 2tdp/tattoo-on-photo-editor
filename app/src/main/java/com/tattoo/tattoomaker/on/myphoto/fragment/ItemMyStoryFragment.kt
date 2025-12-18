@@ -8,7 +8,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import com.tattoo.tattoomaker.on.myphoto.R
-import com.tattoo.tattoomaker.on.myphoto.activity.EditActivity
+import com.tattoo.tattoomaker.on.myphoto.activity.edit.EditActivity
 import com.tattoo.tattoomaker.on.myphoto.adapter.ProjectAdapter
 import com.tattoo.tattoomaker.on.myphoto.addview.viewitem.ViewItemMyStory
 import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackItem

@@ -1,24 +1,24 @@
-package com.tattoo.tattoomaker.on.myphoto.activity
+package com.tattoo.tattoomaker.on.myphoto.activity.edit
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.room.Insert
 import com.tattoo.tattoomaker.on.myphoto.activity.base.BaseActivity
 import com.tattoo.tattoomaker.on.myphoto.adapter.ChooseBackgroundAdapter
 import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackItem
 import com.tattoo.tattoomaker.on.myphoto.data.DataPic
 import com.tattoo.tattoomaker.on.myphoto.databinding.ActivityChooseImageBinding
 import com.tattoo.tattoomaker.on.myphoto.extensions.setOnUnDoubleClickListener
-import com.tattoo.tattoomaker.on.myphoto.model.picture.PicModel
 import com.tattoo.tattoomaker.on.myphoto.helper.Constant
-import com.tattoo.tattoomaker.on.myphoto.utils.Utils
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant.BACKGROUND_PICTURE
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant.FROM_ASSETS
+import com.tattoo.tattoomaker.on.myphoto.model.picture.PicModel
 import com.tattoo.tattoomaker.on.myphoto.utils.UtilsBitmap
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
@@ -35,7 +35,8 @@ class ChooseImageActivity: BaseActivity<ActivityChooseImageBinding>(ActivityChoo
 
     }
 
-    @Inject lateinit var chooseImageAdapter: ChooseBackgroundAdapter
+    @Inject
+    lateinit var chooseImageAdapter: ChooseBackgroundAdapter
 
     private var photoUri: Uri? = null
 
@@ -48,7 +49,12 @@ class ChooseImageActivity: BaseActivity<ActivityChooseImageBinding>(ActivityChoo
 
         chooseImageAdapter.callBack = object : ICallBackItem {
             override fun callBack(ob: Any?, position: Int) {
-
+                if (ob is PicModel) {
+                    startIntent(Intent(this@ChooseImageActivity, EditActivity::class.java).apply {
+                        putExtra(FROM_ASSETS, true)
+                        putExtra(BACKGROUND_PICTURE, ob.uri)
+                    },true)
+                }
             }
         }
         binding.rcv.apply {
@@ -65,7 +71,10 @@ class ChooseImageActivity: BaseActivity<ActivityChooseImageBinding>(ActivityChoo
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             uri?.let {
                 // Xử lý ảnh tại đây
-                Log.d("PickImage", "Uri = $it")
+                startIntent(Intent(this@ChooseImageActivity, EditActivity::class.java).apply {
+                    putExtra(FROM_ASSETS, false)
+                    putExtra(BACKGROUND_PICTURE, uri)
+                },true)
             }
         }
 
@@ -83,10 +92,10 @@ class ChooseImageActivity: BaseActivity<ActivityChooseImageBinding>(ActivityChoo
 
     private val launchTakePhoto = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSaved ->
         if (isSaved) {
-            val size = UtilsBitmap.getImageSize(this@ChooseImageActivity, photoUri)
-            val ratio = size[0] / size[1]
-            val picModel = PicModel("-1", "takePhoto", ratio, photoUri.toString(), false)
-
+            startIntent(Intent(this@ChooseImageActivity, EditActivity::class.java).apply {
+                putExtra(FROM_ASSETS, false)
+                putExtra(BACKGROUND_PICTURE, photoUri.toString())
+            },true)
         }
     }
 
