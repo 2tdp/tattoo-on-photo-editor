@@ -115,7 +115,7 @@
             android:gravity="center_horizontal"
             android:orientation="vertical"
             android:paddingVertical="@dimen/_10sdp"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/llEdit"
             app:layout_constraintStart_toEndOf="@id/llShare"
             app:layout_constraintTop_toTopOf="parent">
 
@@ -130,6 +130,33 @@
                 android:layout_marginTop="@dimen/_5sdp"
                 android:fontFamily="@font/solway_regular"
                 android:text="@string/wallpaper"
+                android:textColor="@color/white"
+                android:textSize="@dimen/_13ssp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/llEdit"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingVertical="@dimen/_10sdp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/llWallpaper"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="@dimen/_20sdp"
+                android:layout_height="@dimen/_20sdp"
+                android:src="@drawable/ic_edit" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_5sdp"
+                android:fontFamily="@font/solway_regular"
+                android:text="@string/edit"
                 android:textColor="@color/white"
                 android:textSize="@dimen/_13ssp" />
         </LinearLayout>

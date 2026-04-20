@@ -43,7 +43,7 @@ class AddTextDialog(private val context: AppCompatActivity, private var textMode
 
         val fontTextAdapter = FontTextAdapter(context).apply {
             object : ICallBackItem {
-                override fun callBack(ob: Any?, position: Int) {
+                override fun callBack(ob: Any, position: Int) {
                     Utils.hideKeyboard(context, binding.root)
                     if (ob is FontModel) {
                         textModel?.let { it.fontModel = ob }
@@ -73,8 +73,9 @@ class AddTextDialog(private val context: AppCompatActivity, private var textMode
             textModel?.let {
                 it.content = if (binding.edt.text.toString() != "") binding.edt.text.toString()
                 else context.resources.getString(R.string.tattoo)
+
+                callBack?.callBack(it,-1)
             }
-            callBack?.callBack(textModel,-1)
             dismiss()
         }
 

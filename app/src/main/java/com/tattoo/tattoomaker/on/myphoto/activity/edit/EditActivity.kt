@@ -64,6 +64,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.wysaid.nativePort.CGENativeLibrary
 import java.io.File
+import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::inflate) {
@@ -72,40 +76,72 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
 
     }
 
-    private lateinit var undoRedo: UndoRedo
+    private val viewModel: EditViewModel by viewModels()
 
+    @Inject lateinit var tattooAdapter: TattooAdapter
+
+    // ─── UI-only state (not in ViewModel) ─────────────────────────────────────
     private var currentSticker: Sticker? = null
     private lateinit var stickerOld: Sticker
-    private var project: ProjectModel? = null
-    private var currentProject: UndoRedoModel? = null
-    private var backgroundModel: BackgroundModel? = null
+    private var project: ProjectModel? = null     // transient: loaded from prefs, then cleared
+    private var currentProject: UndoRedoModel? = null  // current undo state builder
     private lateinit var bitmap: Bitmap
-    private var indexProject = -1
     private var indexMatrix = 0
-    private var isProject = false
+    private var saveProjectCallback: ICallBackItem? = null  // result handler for saveProject
 
-    private var nameFolderBackground = ""
-    private var nameFolderImage = ""
-    private var nameFolder = ""
+    // ─── Property delegates → ViewModel state (survives config change) ─────────
+    private val undoRedo get() = viewModel.undoRedo
+    private var backgroundModel: BackgroundModel?
+        get() = viewModel.backgroundModel
+        set(value) { viewModel.backgroundModel = value }
+    private var isProject
+        get() = viewModel.isProject
+        set(value) { viewModel.isProject = value }
+    private var indexProject
+        get() = viewModel.indexProject
+        set(value) { viewModel.indexProject = value }
+    private var isCropped
+        get() = viewModel.isCropped
+        set(value) { viewModel.isCropped = value }
+    private val nameFolder get() = viewModel.nameFolder
+    private val nameFolderBackground get() = viewModel.nameFolderBackground
+    private val nameFolderImage get() = viewModel.nameFolderImage
+
 
     override fun setUp() {
-        backgroundModel = BackgroundModel().apply {
-            adjustModel = AdjustModel(0f, 0f, 0f, 0f, 0f, 0f)
+        // Initialize background from Intent URI — ViewModel creates BackgroundModel (idempotent)
+        viewModel.initBackground(intent.getStringExtra(Constant.BACKGROUND_PICTURE) ?: "")
+
+        // Collect UndoRedo events: fired when user taps Undo/Redo (survives config change)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.undoRedoEvent.collect { event ->
+                    when (event) {
+                        is EditViewModel.UndoRedoEvent.Undo -> finishUndoRedo(event.model)
+                        is EditViewModel.UndoRedoEvent.Redo -> finishUndoRedo(event.model)
+                    }
+                }
+            }
         }
 
-        undoRedo = UndoRedo(object : UndoRedo.OnUndoRedoEventListener {
-            override fun onUndoFinished(projectOriginator: UndoRedoModel?) {
-                projectOriginator?.let { finishUndoRedo(it) }
+        // Collect save project results: fired after IO completes in ViewModel
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.saveProjectResult.collect { result ->
+                    when (result) {
+                        is EditViewModel.SaveProjectResult.Success -> {
+                            hideLoading()
+                            saveProjectCallback?.callBack(result.project, -1)
+                            saveProjectCallback = null
+                        }
+                        is EditViewModel.SaveProjectResult.Error -> {
+                            hideLoading()
+                            showToast(result.message, Gravity.BOTTOM)
+                        }
+                    }
+                }
             }
-
-            override fun onRedoFinished(projectOriginator: UndoRedoModel?) {
-                projectOriginator?.let { finishUndoRedo(it) }
-            }
-
-            override fun onStateSaveFinished() {
-
-            }
-        })
+        }
 
         onBackPressedDispatcher.addCallback(this@EditActivity, object : OnBackPressedCallback(true){
             override fun handleOnBackPressed() {
@@ -156,15 +192,20 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
             override fun onStickerDoubleTapped(sticker: Sticker) {}
         }
 
-        createProject()
+        viewModel.initProject(this@EditActivity)
         evenClick()
     }
 
     override fun onResume() {
         super.onResume()
 
+        // Re-attach callback if CropImageDialog survived config change (e.g. rotation)
+        (supportFragmentManager.findFragmentByTag("CropImageDialog") as? CropImageDialog)?.let {
+            it.callBack = createCropCallback()
+        }
+
         project = DataLocalManager.Companion.getProject(Constant.PROJECT)
-        if (project == null) cropBackground()
+        if (project == null && !isCropped) cropBackground()
         else {
             showLoading(false)
             isProject = true
@@ -179,47 +220,30 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
         }
     }
 
-    /**
-     * create folder project
-     */
-    private fun createProject() {
-        Thread {
-            val numberCurrentProject = DataLocalManager.Companion.getInt(Constant.NUMB_PROJECT)
-            if (DataLocalManager.Companion.getInt(Constant.NUMB_PROJECT) == -1)
-                DataLocalManager.Companion.setInt(1, Constant.NUMB_PROJECT)
-            else
-                DataLocalManager.Companion.setInt(numberCurrentProject + 1, Constant.NUMB_PROJECT)
-
-            nameFolder =
-                Constant.NUMB_PROJECT + "_" + DataLocalManager.Companion.getInt(Constant.NUMB_PROJECT)
-            Utils.makeFolder(this, nameFolder)
-            val file = File(Utils.getStore(this@EditActivity), nameFolder)
-            if (file.exists()) {
-                nameFolderBackground = nameFolder + "/" + Constant.BACKGROUND
-                Utils.makeFolder(this, nameFolderBackground)
-                nameFolderImage = nameFolder + "/" + Constant.IMAGE
-                Utils.makeFolder(this, nameFolderImage)
+    private fun cropBackground() {
+        intent.getStringExtra(Constant.BACKGROUND_PICTURE)?.let { uri ->
+            val fromAssets = intent.getBooleanExtra(Constant.FROM_ASSETS, false)
+            val dialogCrop = CropImageDialog.newInstance(fromAssets, uri).apply {
+                callBack = createCropCallback()
             }
-        }.start()
+            dialogCrop.show(supportFragmentManager, "CropImageDialog")
+        }
     }
 
-    private fun cropBackground() {
-        DataLocalManager.Companion.getPicture(Constant.BACKGROUND_PICTURE)?.let { pic ->
-            val fromAssets = intent.getBooleanExtra(Constant.FROM_ASSETS, false)
-            val dialogCrop = CropImageDialog(this, fromAssets, pic.uri).apply {
-                callBack = object : ICallBackItem {
-                    override fun callBack(ob: Any?, position: Int) {
-                        if (ob is Bitmap) setBackground(BackgroundModel(), ob)
-                    }
+    private fun createCropCallback(): ICallBackItem {
+        return object : ICallBackItem {
+            override fun callBack(ob: Any, position: Int) {
+                if (ob is Bitmap) {
+                    isCropped = true
+                    setBackground(BackgroundModel(), ob)
                 }
             }
-            dialogCrop.showDialog()
         }
     }
 
     private fun setBackground(background: BackgroundModel, tmpBm: Bitmap?) {
-        val wMain = (94.44f * w / 100).toInt()
-        val hMain = (141.11f * w / 100).toInt()
+        val wMain = (94.44f * w).toInt()
+        val hMain = (141.11f * w).toInt()
         val scaleScreen = wMain.toFloat() / hMain
 
         showLoading()
@@ -254,7 +278,7 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
             undoRedo.tattooModel?.let { tattoo ->
                 val tmp = binding.vSticker.listStickers.filter { sticker ->
                     sticker is DrawableStickerCustom && sticker.typeSticker == Constant.TATTOO
-                            && sticker.tattooModel.id == tattoo.id
+                            && sticker.tattooModel!!.id == tattoo.id
                 }
                 if (tmp.isNotEmpty()) binding.vSticker.remove(tmp[0])
 
@@ -292,13 +316,11 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
         }
         binding.ivExport.setOnClickListener {
             saveProject(Constant.LIST_COMPLETE, object : ICallBackItem {
-                override fun callBack(ob: Any?, position: Int) {
-                    ob?.let {
-                        showToast(resources.getString(R.string.done), Gravity.BOTTOM)
-                        startIntent(Intent(this@EditActivity, SuccessActivity::class.java).apply {
-                            putExtra(Constant.PROJECT_SUCCESS, ob.toJson())
-                        }, true)
-                    }
+                override fun callBack(ob: Any, position: Int) {
+                    showToast(resources.getString(R.string.done), Gravity.BOTTOM)
+                    startIntent(Intent(this@EditActivity, SuccessActivity::class.java).apply {
+                        putExtra(Constant.PROJECT_SUCCESS, ob.toJson())
+                    }, true)
                 }
             })
         }
@@ -349,35 +371,34 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
         }
 
         //tattoos
-        with (binding.vTattoos) {
-            //data_tattoos
-            val tattooAdapter = TattooAdapter(this@EditActivity, object : ICallBackItem {
-                override fun callBack(ob: Any?, position: Int) {
-                    val tattoo = ob as TattooModel
-                    tattoo.apply { id = getId() }
-                    val tattooSticker =
-                        DrawableStickerCustom(this@EditActivity, tattoo, tattoo.id, Constant.TATTOO)
-                    binding.vSticker.addSticker(tattooSticker)
+        //data_tattoos
+        tattooAdapter.setData(DataTattoo.getDataTattoo(this@EditActivity, Constant.NAME_FOLDER_TATTOO_ASSETS))
+        tattooAdapter.callBack = object : ICallBackItem {
+            override fun callBack(ob: Any, position: Int) {
+                val tattoo = ob as TattooModel
+                tattoo.apply { id = getId() }
+                val tattooSticker =
+                    DrawableStickerCustom(this@EditActivity, tattoo, tattoo.id, if (tattoo.isPremium) Constant.TATTOO_PREMIUM else Constant.TATTOO)
+                binding.vSticker.addSticker(tattooSticker)
 
-                    currentProject = UndoRedoModel().apply {
-                        isChangeTattoo = true
-                        tattooModel = TattooModel(tattoo)
-                    }
-                    undoRedo.projectOriginator = currentProject
-                    undoRedo.setState()
-
-                    hideAndSeekViewBottom(Constant.VIEW_TATTOO)
-                    if (tattoo.isPremium) editColorTattooPremium() else editColorTattoo()
+                currentProject = UndoRedoModel().apply {
+                    isChangeTattoo = true
+                    tattooModel = TattooModel(tattoo)
                 }
-            })
-            tattooAdapter.setData(DataTattoo.getDataTattoo(this@EditActivity, Constant.NAME_FOLDER_TATTOO_ASSETS))
+                undoRedo.projectOriginator = currentProject
+                undoRedo.setState()
+
+                hideAndSeekViewBottom(Constant.VIEW_TATTOO)
+                if (tattoo.isPremium) editColorTattooPremium() else editColorTattoo()
+            }
+        }
+        with (binding.vTattoos) {
             binding.vTattoos.rcvTattoos.apply {
                 layoutManager =
                     LinearLayoutManager(this@EditActivity, LinearLayoutManager.HORIZONTAL, false)
                 adapter = tattooAdapter
             }
 
-            //click none tattoo
             ivNone.setOnUnDoubleClickListener {
                 var isTattoo = false
                 val lstDel = ArrayList<DrawableStickerCustom>()
@@ -406,37 +427,37 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
         //filter
         with(binding.vFilter) {
             backgroundModel?.let { background ->
-                val bitmap = BitmapFactory.decodeFile(background.uriCache)
-
-                val filterAdapter = ImageAdapter(this@EditActivity).apply {
-                    callBack = object : ICallBackItem {
-                        override fun callBack(ob: Any?, position: Int) {
-                            if (ob is FilterModel) clickFilter(ob, position)
+                BitmapFactory.decodeFile(background.uriCache)?.let { bitmap ->
+                    val filterAdapter = ImageAdapter(this@EditActivity).apply {
+                        callBack = object : ICallBackItem {
+                            override fun callBack(ob: Any, position: Int) {
+                                if (ob is FilterModel) clickFilter(ob, position)
+                            }
                         }
                     }
-                }
 
-                lifecycleScope.launch(Dispatchers.IO) {
-                    val lstFilter = DataFilter.getDataFilter(
-                        bitmap.scale(320, 320 * bitmap.height / bitmap.width, false)
-                    )
-                    withContext(Dispatchers.Main) {
-                        filterAdapter.setData(lstFilter)
-                        if (background.positionFilterBackground != -1) {
-                            rcvFilter.smoothScrollToPosition(background.positionFilterBackground)
-                            filterAdapter.setCurrent(background.positionFilterBackground)
-                        }
-                    }
-                }
-
-                rcvFilter.apply {
-                    layoutManager =
-                        LinearLayoutManager(
-                            this@EditActivity,
-                            LinearLayoutManager.HORIZONTAL,
-                            false
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val lstFilter = DataFilter.getDataFilter(
+                            bitmap.scale(320, 320 * bitmap.height / bitmap.width, false)
                         )
-                    adapter = filterAdapter
+                        withContext(Dispatchers.Main) {
+                            filterAdapter.setData(lstFilter)
+                            if (background.positionFilterBackground != -1) {
+                                rcvFilter.smoothScrollToPosition(background.positionFilterBackground)
+                                filterAdapter.setCurrent(background.positionFilterBackground)
+                            }
+                        }
+                    }
+
+                    rcvFilter.apply {
+                        layoutManager =
+                            LinearLayoutManager(
+                                this@EditActivity,
+                                LinearLayoutManager.HORIZONTAL,
+                                false
+                            )
+                        adapter = filterAdapter
+                    }
                 }
             }
 
@@ -463,8 +484,11 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
                         undoRedo.setState()
                     }
 
-                    with(Dispatchers.Main) {
-                        binding.iv.setImageBitmap(BitmapFactory.decodeFile(backgroundModel!!.uriCache))
+                    withContext(Dispatchers.Main) {
+                        // Guard: backgroundModel có thể null nếu activity bị destroy trong lúc IO chạy
+                        backgroundModel?.let { bg ->
+                            binding.iv.setImageBitmap(BitmapFactory.decodeFile(bg.uriCache))
+                        }
                         hideLoading()
                     }
                 }
@@ -475,7 +499,7 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
         with(binding.vFrame) {
             val frameAdapter = ImageAdapter(this@EditActivity).apply {
                 callBack = object : ICallBackItem {
-                    override fun callBack(ob: Any?, position: Int) {
+                    override fun callBack(ob: Any, position: Int) {
                         if (ob is FrameModel) clickFrame(ob)
                     }
                 }
@@ -539,20 +563,14 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
 
         bindingDialog.tvDiscard.setOnUnDoubleClickListener {
             dialog.dismiss()
-            showLoading(false)
-            lifecycleScope.launch(Dispatchers.IO) {
-                if (!isProject) Utils.delFileInFolder(this@EditActivity, nameFolder, "")
-
-                withContext(Dispatchers.Main) {
-                    hideLoading()
-                    finish()
-                }
-            }
+            // Folder deletion runs in viewModelScope — survives Activity finishing immediately
+            if (!isProject) viewModel.deleteProjectFolder(this@EditActivity)
+            finish()
         }
         bindingDialog.tvSave.setOnUnDoubleClickListener {
             dialog.dismiss()
             saveProject(Constant.LIST_DRAFT, object : ICallBackItem {
-                override fun callBack(ob: Any?, position: Int) {
+                override fun callBack(ob: Any, position: Int) {
                     finish()
                 }
             })
@@ -561,41 +579,26 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
     }
 
     /**
-     * save project
+     * Capture UI bitmaps on Main thread, then delegate IO persistence to ViewModel.
+     * Result delivered via [EditViewModel.saveProjectResult] flow collected in setUp().
+     *
+     * Note: [UtilsBitmap.loadBitmapFromView] and [StickerView.saveImage] must run on Main thread.
      */
     private fun saveProject(name: String, isDone: ICallBackItem) {
         showLoading(false)
-        val lstSticker = binding.vSticker.listStickers
-        val project = ProjectModel()
+        saveProjectCallback = isDone
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            val bitmap = if (!isProject) {
-                val bmImage = UtilsBitmap.loadBitmapFromView(this@EditActivity, binding.iv)
-                UtilsBitmap.overlay(bmImage, binding.vSticker.saveImage(bmImage.width, bmImage.height), false)
-            } else {
-                val bmImage = UtilsBitmap.loadBitmapFromView(this@EditActivity, binding.iv)
-                UtilsBitmap.overlay(bmImage, binding.vSticker.saveImage(bmImage.width, bmImage.height), false)
-            }
+        // Capture view bitmaps on Main thread (cannot be done on IO thread)
+        val bmImage = UtilsBitmap.loadBitmapFromView(this@EditActivity, binding.iv)
+        val stickerBm = binding.vSticker.saveImage(bmImage.width, bmImage.height)
+        val composite = UtilsBitmap.overlay(bmImage, stickerBm, false)
 
-            project.uriSaved =
-                UtilsBitmap.saveBitmapToApp(this@EditActivity, bitmap, nameFolder, Constant.PIC_SAVED)
-
-            project.backgroundModel = backgroundModel
-            project.nameFolder = nameFolder
-            for (sticker in lstSticker) {
-                if (sticker is DrawableStickerCustom) project.lstTattooModel.add(sticker.tattooModel)
-                else if (sticker is TextStickerCustom) project.lstTextModel.add(sticker.getTextModel())
-            }
-            val lstProject = DataLocalManager.Companion.getListProject(this@EditActivity, name)
-            if (indexProject == -1) lstProject.add(0, project)
-            else lstProject[indexProject] = project
-            DataLocalManager.Companion.setListProject(this@EditActivity, lstProject, name)
-
-            withContext(Dispatchers.Main) {
-                hideLoading()
-                isDone.callBack(project, -1)
-            }
-        }
+        viewModel.saveProject(
+            context = this@EditActivity,
+            listName = name,
+            lstSticker = binding.vSticker.listStickers,
+            compositeBitmap = composite
+        )
     }
 
     /**
@@ -641,8 +644,9 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
             setMatrixText(indexMatrix)
             binding.vSticker.invalidate()
         } else {
-            val drawableSticker = sticker as DrawableStickerCustom
-            matrix.setValues(drawableSticker.tattooModel.matrix)
+            // Safe cast: sticker trong else branch không phải TextStickerCustom nhưng vẫn guard
+            val drawableSticker = sticker as? DrawableStickerCustom ?: return
+            drawableSticker.tattooModel?.let { matrix.setValues(it.matrix) }
             sticker.setMatrix(matrix)
             indexMatrix++
             setMatrixTattoo(indexMatrix)
@@ -704,12 +708,12 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
             }
         }
         if (sticker is DrawableStickerCustom) {
-            sticker.tattooModel.matrix = matrix
+            sticker.tattooModel!!.matrix = matrix
 
             if (isUndoRedo) {
                 currentProject?.let {
                     it.isChangeTattoo = true
-                    it.tattooModel = TattooModel(sticker.tattooModel)
+                    it.tattooModel = TattooModel(sticker.tattooModel!!)
                 }
                 undoRedo.setState()
             }
@@ -720,24 +724,24 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
      * tattoos
      */
     private fun editColorTattoo() {
-
-        val drawableSticker = currentSticker as DrawableStickerCustom
-        binding.vTattoos.vColor.vSeekbar.setProgress(drawableSticker.tattooModel.opacity * 100 / 255)
+        // Guard: currentSticker có thể null hoặc không phải DrawableStickerCustom
+        val drawableSticker = currentSticker as? DrawableStickerCustom ?: return
+        binding.vTattoos.vColor.vSeekbar.setProgress((drawableSticker.tattooModel?.opacity ?: 255) * 100 / 255)
 
         val colorAdapter = ColorAdapter(this@EditActivity).apply {
             callBack = object : ICallBackItem {
-                override fun callBack(ob: Any?, position: Int) {
+                override fun callBack(ob: Any, position: Int) {
                     if (ob is ColorModel) {
                         if (ob.colorEnd == null && ob.colorStart == null) {
                             DataColor.showDialogPickColor(this@EditActivity, object :
                                 ICallBackItem {
-                                override fun callBack(ob: Any?, position: Int) {
+                                override fun callBack(ob: Any, position: Int) {
                                     drawableSticker.setColor(ob as ColorModel)
                                     binding.vSticker.invalidate()
 
                                     currentProject?.let {
                                         it.isChangeTattoo = true
-                                        it.tattooModel = TattooModel(drawableSticker.tattooModel)
+                                        it.tattooModel = TattooModel(drawableSticker.tattooModel!!)
                                     }
                                     undoRedo.setState()
                                 }
@@ -748,7 +752,7 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
 
                             currentProject?.let {
                                 it.isChangeTattoo = true
-                                it.tattooModel = TattooModel(drawableSticker.tattooModel)
+                                it.tattooModel = TattooModel(drawableSticker.tattooModel!!)
                             }
                             undoRedo.setState()
                         }
@@ -766,7 +770,7 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
             adapter = colorAdapter
         }
 
-        drawableSticker.tattooModel.colorModel?.let {
+        drawableSticker.tattooModel!!.colorModel?.let {
             colorAdapter.setCurrent(it)
             binding.vTattoos.vColor.rcv.scrollToPosition(colorAdapter.getPosition(it))
         }
@@ -778,9 +782,9 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
                 }
 
                 override fun onMove(v: View, value: Int) {
-                    drawableSticker.tattooModel.apply { opacity = value * 255 / 100 }
+                    drawableSticker.tattooModel!!.apply { opacity = value * 255 / 100 }
                     binding.vSticker.replace(
-                        drawableSticker.tattooModel.opacity(this@EditActivity, drawableSticker),
+                        drawableSticker.tattooModel!!.opacity(this@EditActivity, drawableSticker),
                         true
                     )
                 }
@@ -788,7 +792,7 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
                 override fun onUp(v: View, value: Int) {
                     currentProject?.let {
                         it.isChangeTattoo = true
-                        it.tattooModel = TattooModel(drawableSticker.tattooModel)
+                        it.tattooModel = TattooModel(drawableSticker.tattooModel!!)
                     }
                     undoRedo.setState()
                 }
@@ -796,9 +800,9 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
     }
 
     private fun editColorTattooPremium() {
-
-        val drawableSticker = currentSticker as DrawableStickerCustom
-        binding.vTattoos.vColor.vSeekbar.setProgress(drawableSticker.tattooModel.opacity * 100 / 255)
+        // Guard: currentSticker có thể null hoặc không phải DrawableStickerCustom
+        val drawableSticker = currentSticker as? DrawableStickerCustom ?: return
+        binding.vTattoos.vColor.vSeekbar.setProgress((drawableSticker.tattooModel?.opacity ?: 255) * 100 / 255)
 
         //opacity
         binding.vTattoos.vColor.vSeekbar.onSeekbarResult = object : OnSeekbarResult {
@@ -807,14 +811,14 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
             }
 
             override fun onMove(v: View, value: Int) {
-                drawableSticker.tattooModel.opacity = value * 255 / 100
+                drawableSticker.tattooModel!!.opacity = value * 255 / 100
                 binding.vSticker.replace(drawableSticker, true)
             }
 
             override fun onUp(v: View, value: Int) {
                 currentProject?.let {
                     it.isChangeTattoo = true
-                    it.tattooModel = TattooModel(drawableSticker.tattooModel)
+                    it.tattooModel = TattooModel(drawableSticker.tattooModel!!)
                 }
                 undoRedo.setState()
             }
@@ -827,7 +831,7 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
             addListener(object :
                 ColorSeekBar.OnColorPickListener<ColorSeekBar<IntegerHSLColor>, IntegerHSLColor> {
                 override fun onColorChanged(picker: ColorSeekBar<IntegerHSLColor>, color: IntegerHSLColor, value: Int) {
-                    drawableSticker.tattooModel.colorModel?.let {
+                    drawableSticker.tattooModel!!.colorModel?.let {
                         it.colorStart = color.floatH.toInt()
                         it.colorEnd = color.floatH.toInt()
                     }
@@ -837,13 +841,13 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
                 override fun onColorPicked(picker: ColorSeekBar<IntegerHSLColor>, color: IntegerHSLColor, value: Int, fromUser: Boolean) {
                     currentProject?.let {
                         it.isChangeTattoo = true
-                        it.tattooModel = TattooModel(drawableSticker.tattooModel)
+                        it.tattooModel = TattooModel(drawableSticker.tattooModel!!)
                     }
                     undoRedo.setState()
                 }
 
                 override fun onColorPicking(picker: ColorSeekBar<IntegerHSLColor>, color: IntegerHSLColor, value: Int, fromUser: Boolean) {
-                    drawableSticker.tattooModel.colorModel?.let {
+                    drawableSticker.tattooModel!!.colorModel?.let {
                         it.colorStart = color.floatH.toInt()
                         it.colorEnd = color.floatH.toInt()
                     }
@@ -864,7 +868,7 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
 
             val addTextDialog = AddTextDialog(this, textModel).apply {
                 callBack = object : ICallBackItem {
-                    override fun callBack(ob: Any?, position: Int) {
+                    override fun callBack(ob: Any, position: Int) {
                         if (ob is TextModel) {
                             ob.id = getId()
 
@@ -889,18 +893,19 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
         }
     }
     private fun editColorText() {
-        val textSticker = currentSticker as TextStickerCustom
+        // Guard: currentSticker có thể null khi user bấm nhanh
+        val textSticker = currentSticker as? TextStickerCustom ?: return
         binding.vEditText.vColor.vSeekbar.setProgress(textSticker.getTextModel().opacity * 100 / 255)
         binding.vEditText.vColor.tv.text = getString(R.string.opacity)
 
         val colorAdapter = ColorAdapter(this@EditActivity).apply {
             callBack = object : ICallBackItem {
-                override fun callBack(ob: Any?, position: Int) {
+                override fun callBack(ob: Any, position: Int) {
                     if (ob is ColorModel) {
                         if (ob.colorEnd == null && ob.colorStart == null)
                             DataColor.showDialogPickColor(this@EditActivity, object :
                                 ICallBackItem {
-                                override fun callBack(ob: Any?, position: Int) {
+                                override fun callBack(ob: Any, position: Int) {
                                     textSticker.setTextColor(ob as ColorModel)
                                     binding.vSticker.invalidate()
 
@@ -962,8 +967,8 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
         }
     }
     private fun editShadowText() {
-
-        val textSticker = currentSticker as TextStickerCustom
+        // Guard: currentSticker có thể null khi user bấm nhanh
+        val textSticker = currentSticker as? TextStickerCustom ?: return
         textSticker.getTextModel().shadowModel?.let {
             binding.vEditText.vColor.vSeekbar.setProgress((it.blur * 10).toInt())
         }
@@ -971,12 +976,12 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
         binding.vEditText.vColor.tv.text = getString(R.string.shadow)
         val colorAdapter = ColorAdapter(this@EditActivity).apply {
             callBack = object : ICallBackItem {
-                override fun callBack(ob: Any?, position: Int) {
+                override fun callBack(ob: Any, position: Int) {
                     if (ob is ColorModel) {
                         if (ob.colorStart == null && ob.colorEnd == null) {
                             DataColor.showDialogPickColor(this@EditActivity, object :
                                 ICallBackItem {
-                                override fun callBack(ob: Any?, position: Int) {
+                                override fun callBack(ob: Any, position: Int) {
                                     textSticker.setTextColor(ob as ColorModel)
                                     binding.vSticker.invalidate()
 
@@ -1147,14 +1152,16 @@ class EditActivity: BaseActivity<ActivityEditBinding>(ActivityEditBinding::infla
         }
     }
     private fun adjust(adjust: AdjustModel) {
-        backgroundModel?.let {
-            bitmap = UtilsAdjust.adjust(BitmapFactory.decodeFile(it.uriCache), adjust)
-            binding.iv.setImageBitmap(bitmap)
+        backgroundModel?.let { bg ->
+            BitmapFactory.decodeFile(bg.uriCache)?.let {
+                bitmap = UtilsAdjust.adjust(it, adjust)
+                binding.iv.setImageBitmap(bitmap)
 
-            lifecycleScope.launch(Dispatchers.IO) {
-                it.uriCache = UtilsBitmap.saveBitmapToApp(
-                    this@EditActivity, bitmap, nameFolderBackground, Constant.BACKGROUND
-                )
+                lifecycleScope.launch(Dispatchers.IO) {
+                    bg.uriCache = UtilsBitmap.saveBitmapToApp(
+                        this@EditActivity, bitmap, nameFolderBackground, Constant.BACKGROUND
+                    )
+                }
             }
         }
     }

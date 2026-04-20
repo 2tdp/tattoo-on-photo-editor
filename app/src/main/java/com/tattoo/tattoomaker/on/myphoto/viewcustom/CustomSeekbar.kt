@@ -5,13 +5,23 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.ContextCompat
 import com.tattoo.tattoomaker.on.myphoto.R
 import com.remi.textonphoto.writeonphoto.addtext.customview.OnSeekbarResult
 
-class CustomSeekbar(context: Context) : View(context) {
+class CustomSeekbar : View {
+
+    constructor(context: Context) : super(context)
+    constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
+    constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr
+    )
+
 
     companion object {
         var w = 0F
@@ -45,7 +55,7 @@ class CustomSeekbar(context: Context) : View(context) {
         super.onDraw(canvas)
         paint.apply {
             clearShadowLayer()
-            color = ContextCompat.getColor(context, R.color.gray)
+            color = ContextCompat.getColor(context, R.color.white)
             strokeWidth = sizeBg
         }
         canvas.drawLine(sizeThumb / 2, height / 2f, width - sizeThumb / 2, height / 2f, paint)

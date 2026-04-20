@@ -14,6 +14,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
+import com.tattoo.tattoomaker.on.myphoto.BuildConfig
 import com.tattoo.tattoomaker.on.myphoto.model.LanguageModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope

@@ -121,8 +121,9 @@ object Utils {
         var result = 0 // Returns connection type. 0: none; 1: mobile data; 2: wifi
         val cm: ConnectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val capabilities: NetworkCapabilities? = cm.getNetworkCapabilities(cm.activeNetwork)
-            if (capabilities!!.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) result = 2
+            // Guard: getNetworkCapabilities() trả null khi airplane mode hoặc không có network
+            val capabilities: NetworkCapabilities = cm.getNetworkCapabilities(cm.activeNetwork) ?: return 0
+            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) result = 2
             else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) result = 1
             else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) result = 3
         }
@@ -442,9 +443,8 @@ object Utils {
     }
 
     fun privacyApp(context: Context) {
-        val linkPrivacy = "https://myweatherforecastandwidget.blogspot.com/"
-        val browserIntent = Intent(Intent.ACTION_VIEW, linkPrivacy.toUri())
-        context.startActivity(browserIntent)
+        // Dùng Constant.PRIVACY thay vì hardcode — link cũ trỏ nhầm sang app thời tiết khác
+        openLink(context, Constant.PRIVACY)
     }
 
     fun shareFile(context: Context, bitmap: Bitmap, application: String?) {

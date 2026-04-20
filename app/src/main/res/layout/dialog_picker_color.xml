@@ -72,7 +72,7 @@
         android:layout_height="@dimen/_40sdp"
         android:layout_marginStart="@dimen/_8sdp"
         android:layout_marginEnd="@dimen/_16sdp"
-        android:background="@drawable/bg_btn_enable_1"
+        android:background="@drawable/bg_btn_enable_2"
         android:fontFamily="@font/solway_bold"
         android:gravity="center"
         android:text="@string/ok"

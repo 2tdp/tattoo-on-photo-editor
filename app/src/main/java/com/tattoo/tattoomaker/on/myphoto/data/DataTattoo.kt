@@ -20,7 +20,7 @@ object DataTattoo {
                     lstTattooPremium.add(
                         TattooModel(
                             0, s.toString(), name, mutableListOf(),
-                            ColorModel(), ShadowModel(), 255, false, false, false, null
+                            ColorModel(), null, 255, false, false, true, null
                         )
                     )
                 }
@@ -34,14 +34,27 @@ object DataTattoo {
     fun getDataTattoo(context: Context, name: String): MutableList<TattooModel> {
         val lstTattoo = mutableListOf<TattooModel>()
         try {
-            context.assets.list(name)?.let { folder ->
-                for (s in folder) {
-                    lstTattoo.add(
-                        TattooModel(
-                            0, s, name, getPathDataTattoo(context, s, name),
-                            ColorModel(), ShadowModel(), 255, false, false, false, null
-                        )
-                    )
+            // name = "tattoo" → list() trả về các SUBFOLDER: ["tattoo_free", "tattoo_premium", ...]
+            // Phải duyệt vào từng subfolder, rồi mới list file .json bên trong
+            context.assets.list(name)?.let { subFolders ->
+                for (subFolder in subFolders) {
+                    val subFolderPath = "$name/$subFolder"
+
+                    // Skip tattoo_premium — được load riêng bởi getDataTattooPremium
+                    if (subFolder == "tattoo_premium" || !subFolder.contains("tattoo")) continue
+
+                    // list file bên trong subfolder (vd: tattoo/tattoo_free → free_1.json, free_2.json...)
+                    context.assets.list(subFolderPath)?.let { files ->
+                        for (fileName in files) {
+                            lstTattoo.add(
+                                TattooModel(
+                                    0, fileName, subFolderPath,
+                                    getPathDataTattoo(context, fileName, subFolderPath),
+                                    ColorModel(), null, 255, false, false, false, null
+                                )
+                            )
+                        }
+                    }
                 }
             }
 
@@ -51,6 +64,7 @@ object DataTattoo {
         }
         return lstTattoo
     }
+
 
     private fun createPath(lstPath: ArrayList<String>): Path {
         val path = Path()
@@ -70,7 +84,8 @@ object DataTattoo {
             stream.read(buffer)
             stream.close()
             tContents = String(buffer)
-        } catch (ignored: IOException) {
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
         if (tContents.isNotEmpty()) {
             val type = object : TypeToken<ArrayList<String>>() {}.type

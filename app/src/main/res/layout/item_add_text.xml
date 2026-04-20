@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:layout_marginVertical="@dimen/_8sdp"
     android:layout_marginHorizontal="@dimen/_8sdp"
-    android:background="@drawable/bg_btn_enable_1"
+    android:background="@drawable/bg_btn_enable_2"
     android:fontFamily="@font/solway_medium"
     android:paddingHorizontal="@dimen/_18sdp"
     android:paddingVertical="@dimen/_13sdp"

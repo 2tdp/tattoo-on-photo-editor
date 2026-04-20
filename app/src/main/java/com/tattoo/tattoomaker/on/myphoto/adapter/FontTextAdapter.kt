@@ -2,21 +2,17 @@ package com.tattoo.tattoomaker.on.myphoto.adapter
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Color
 import android.graphics.Typeface
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import com.tattoo.tattoomaker.on.myphoto.MyApp
 import com.tattoo.tattoomaker.on.myphoto.R
 import com.tattoo.tattoomaker.on.myphoto.callback.ICallBackItem
 import com.tattoo.tattoomaker.on.myphoto.databinding.ItemAddTextBinding
 import com.tattoo.tattoomaker.on.myphoto.extensions.setOnUnDoubleClickListener
 import com.tattoo.tattoomaker.on.myphoto.model.text.FontModel
-import com.tattoo.tattoomaker.on.myphoto.utils.Utils
-import com.tattoo.tattoomaker.on.myphoto.utils.UtilsView.textCustom
 
 class FontTextAdapter(private val context: Context): RecyclerView.Adapter<FontTextAdapter.FontTextHolder>() {
 
@@ -47,7 +43,7 @@ class FontTextAdapter(private val context: Context): RecyclerView.Adapter<FontTe
                 binding.root.apply {
                     setTextColor(ContextCompat.getColor(context, R.color.white))
                     gravity = Gravity.CENTER
-                    setBackgroundResource(R.drawable.bg_btn_enable_1)
+                    setBackgroundResource(R.drawable.bg_btn_enable_2)
                 }
             else
                 binding.root.apply {

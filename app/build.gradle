@@ -34,11 +34,11 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     buildFeatures {
@@ -74,23 +74,31 @@ android {
 
 dependencies {
 
-    implementation 'androidx.core:core-ktx:1.13.0'
-    implementation 'androidx.appcompat:appcompat:1.7.1'
+    // AndroidX Core — updated 1.13.0 → 1.15.0
+    implementation 'androidx.core:core-ktx:1.15.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.activity:activity-ktx:1.9.0'
     implementation 'com.google.android.material:material:1.12.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    // ConstraintLayout — updated 2.1.4 → 2.2.1 (performance + bug fixes)
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
     implementation project(path: ':library')
 
-    implementation "androidx.recyclerview:recyclerview:1.2.1"
+    // RecyclerView — updated 1.2.1 → 1.3.2
+    implementation "androidx.recyclerview:recyclerview:1.3.2"
     implementation "androidx.recyclerview:recyclerview-selection:1.1.0"
-    implementation "androidx.viewpager2:viewpager2:1.0.0"
+    // ViewPager2 — updated 1.0.0 → 1.1.0 (stable, RTL + offscreen limit fixes)
+    implementation "androidx.viewpager2:viewpager2:1.1.0"
     implementation "androidx.cardview:cardview:1.0.0"
-    implementation "com.airbnb.android:lottie:5.2.0"
-    implementation 'com.google.code.gson:gson:2.9.1'
+    // Lottie — updated 5.2.0 → 6.4.0 (2 major versions behind)
+    implementation "com.airbnb.android:lottie:6.4.0"
+    // Gson — updated 2.9.1 → 2.10.1 (security + null-safety fixes)
+    implementation 'com.google.code.gson:gson:2.10.1'
     implementation "com.karumi:dexter:6.2.3"
-    implementation "com.github.bumptech.glide:glide:4.13.2"
-    implementation "com.tbuonomo:dotsindicator:4.3"
-    implementation 'com.intuit.sdp:sdp-android:1.0.6'
-    implementation 'com.intuit.ssp:ssp-android:1.0.6'
+    // Glide — updated 4.13.2 → 4.16.0
+    implementation "com.github.bumptech.glide:glide:4.16.0"
+    implementation "com.tbuonomo:dotsindicator:5.1.0"
+    implementation 'com.intuit.sdp:sdp-android:1.1.1'
+    implementation 'com.intuit.ssp:ssp-android:1.1.1'
 
     //Animations
     //noinspection UseTomlInstead
@@ -103,7 +111,6 @@ dependencies {
     //Room
     implementation "androidx.room:room-ktx:2.8.0"
     implementation 'androidx.room:room-runtime:2.8.0'
-    annotationProcessor 'androidx.room:room-compiler:2.8.0'
     ksp 'androidx.room:room-compiler:2.8.0'
 
     implementation 'com.otaliastudios:zoomlayout:1.9.0'

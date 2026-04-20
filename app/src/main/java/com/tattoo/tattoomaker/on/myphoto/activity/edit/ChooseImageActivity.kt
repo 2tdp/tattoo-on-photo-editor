@@ -48,7 +48,7 @@ class ChooseImageActivity: BaseActivity<ActivityChooseImageBinding>(ActivityChoo
         })
 
         chooseImageAdapter.callBack = object : ICallBackItem {
-            override fun callBack(ob: Any?, position: Int) {
+            override fun callBack(ob: Any, position: Int) {
                 if (ob is PicModel) {
                     startIntent(Intent(this@ChooseImageActivity, EditActivity::class.java).apply {
                         putExtra(FROM_ASSETS, true)
@@ -73,7 +73,7 @@ class ChooseImageActivity: BaseActivity<ActivityChooseImageBinding>(ActivityChoo
                 // Xử lý ảnh tại đây
                 startIntent(Intent(this@ChooseImageActivity, EditActivity::class.java).apply {
                     putExtra(FROM_ASSETS, false)
-                    putExtra(BACKGROUND_PICTURE, uri)
+                    putExtra(BACKGROUND_PICTURE, uri.toString())
                 },true)
             }
         }
@@ -86,7 +86,7 @@ class ChooseImageActivity: BaseActivity<ActivityChooseImageBinding>(ActivityChoo
                 "com.tattoo.tattoomaker.on.myphoto",
                 photoFile
             )
-            launchTakePhoto.launch(photoUri)
+            photoUri?.let { launchTakePhoto.launch(it) }
         }
     }
 

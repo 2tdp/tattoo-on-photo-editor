@@ -8,10 +8,15 @@ import android.widget.Toast
 import com.google.gson.Gson
 import com.tattoo.tattoomaker.on.myphoto.R
 import com.tattoo.tattoomaker.on.myphoto.activity.base.BaseActivity
+import com.tattoo.tattoomaker.on.myphoto.activity.edit.EditActivity
 import com.tattoo.tattoomaker.on.myphoto.databinding.ActivitySuccessBinding
+import com.tattoo.tattoomaker.on.myphoto.extensions.gone
 import com.tattoo.tattoomaker.on.myphoto.extensions.setOnUnDoubleClickListener
+import com.tattoo.tattoomaker.on.myphoto.extensions.visible
+import com.tattoo.tattoomaker.on.myphoto.helper.Constant
 import com.tattoo.tattoomaker.on.myphoto.helper.Constant.PROJECT_SUCCESS
 import com.tattoo.tattoomaker.on.myphoto.model.ProjectModel
+import com.tattoo.tattoomaker.on.myphoto.sharepref.DataLocalManager
 import com.tattoo.tattoomaker.on.myphoto.utils.Utils
 import org.json.JSONObject
 
@@ -22,11 +27,15 @@ class SuccessActivity: BaseActivity<ActivitySuccessBinding>(ActivitySuccessBindi
     }
 
     private var bitmap: Bitmap? = null
+    private var project: ProjectModel? = null
 
     override fun setUp() {
         intent.getStringExtra(PROJECT_SUCCESS)?.let {
-            val project = Gson().fromJson(JSONObject(it).toString(), ProjectModel::class.java)
-            bitmap = BitmapFactory.decodeFile(project.uriSaved)
+            project = Gson().fromJson(JSONObject(it).toString(), ProjectModel::class.java)
+            bitmap = BitmapFactory.decodeFile(project?.uriSaved)
+        }
+        intent.getIntExtra(Constant.TYPE_SUCCESS, 0).let {
+            if (it == 0) binding.llEdit.gone() else binding.llEdit.visible()
         }
 
         binding.ivHome.setOnUnDoubleClickListener {
@@ -49,6 +58,11 @@ class SuccessActivity: BaseActivity<ActivitySuccessBinding>(ActivitySuccessBindi
             val wallpaper = WallpaperManager.getInstance(this@SuccessActivity)
             wallpaper.setBitmap(bitmap)
             Toast.makeText(this@SuccessActivity, resources.getString(R.string.done), Toast.LENGTH_SHORT).show()
+        }
+
+        binding.llEdit.setOnUnDoubleClickListener {
+            DataLocalManager.setProject(project, Constant.PROJECT)
+            startIntent(EditActivity::class.java.name, true)
         }
     }
 }

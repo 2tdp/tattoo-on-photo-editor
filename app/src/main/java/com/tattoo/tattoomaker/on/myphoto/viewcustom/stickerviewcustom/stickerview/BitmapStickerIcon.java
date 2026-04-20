@@ -19,7 +19,7 @@ import java.lang.annotation.RetentionPolicy;
  */
 public class BitmapStickerIcon extends DrawableStickerCustom implements StickerIconEvent {
 
-    public static final float DEFAULT_ICON_RADIUS = 20f;
+    public static final float DEFAULT_ICON_RADIUS = 10f;
     public static final float DEFAULT_ICON_EXTRA_RADIUS = 25f;
 
     @IntDef({LEFT_TOP, RIGHT_TOP, LEFT_BOTTOM, RIGHT_BOTTOM})

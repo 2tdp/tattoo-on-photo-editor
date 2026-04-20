@@ -334,14 +334,17 @@ open class TextStickerCustom(private val context: Context, private var textModel
     }
 
     override fun setAlpha(@IntRange(from = 0, to = 255) alpha: Int): Sticker {
-        textPaint!!.alpha = alpha
-        shadowPaint!!.alpha = alpha
-        shadowPaint!!.setShadowLayer(
-            textModel.shadowModel!!.blur,
-            textModel.shadowModel!!.xPos,
-            textModel.shadowModel!!.yPos,
-            UtilsBitmap.toARGBString(alpha, shadowPaint!!.color).toColorInt())
-
+        textPaint?.alpha = alpha
+        shadowPaint?.alpha = alpha
+        // Guard: shadowModel có thể null khi user chưa set shadow — tránh NPE
+        textModel.shadowModel?.let { shadow ->
+            shadowPaint?.setShadowLayer(
+                shadow.blur,
+                shadow.xPos,
+                shadow.yPos,
+                UtilsBitmap.toARGBString(alpha, shadowPaint?.color ?: Color.BLACK).toColorInt()
+            )
+        }
         return this
     }
 

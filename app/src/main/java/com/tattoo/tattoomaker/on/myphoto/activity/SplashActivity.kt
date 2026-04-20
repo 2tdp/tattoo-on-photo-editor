@@ -20,7 +20,7 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>(ActivitySplashBinding
 
     override fun setUp() {
         binding.vLoading.onProgress = object : ICallBackItem {
-            override fun callBack(ob: Any?, position: Int) {
+            override fun callBack(ob: Any, position: Int) {
                 binding.tvProgress.text = "${getString(R.string.loading)}($position%)..."
             }
         }
@@ -29,6 +29,6 @@ class SplashActivity : BaseActivity<ActivitySplashBinding>(ActivitySplashBinding
     }
 
     private fun startActivity(isShowNativeFull: Boolean) {
-        startIntent(Intent(this@SplashActivity, OnBoardingActivity::class.java), true)
+        startIntent(Intent(this@SplashActivity, MainActivity::class.java), true)
     }
 }

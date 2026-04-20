@@ -42,6 +42,16 @@ abstract class BaseActivity<B : ViewBinding>(val bindingFactory: (LayoutInflater
 
         setContentView(binding.root)
         w = resources.displayMetrics.widthPixels / 100F
+
+        setUp()
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
+            val imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+
+            handleKeyboardUi(imeVisible, imeHeight)
+
+            insets
+        }
     }
 
     protected abstract fun handleKeyboardUi(isVisible: Boolean, imeHeight: Int)
@@ -54,19 +64,6 @@ abstract class BaseActivity<B : ViewBinding>(val bindingFactory: (LayoutInflater
         window.navigationBarColor = "#01ffffff".toColorInt()
         window.statusBarColor = Color.TRANSPARENT
         window.decorView.systemUiVisibility = hideSystemBars()
-
-        setContentView(binding.root)
-        w = resources.displayMetrics.widthPixels / 100F
-
-        setUp()
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
-            val imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-
-            handleKeyboardUi(imeVisible, imeHeight)
-
-            insets
-        }
     }
 
     private fun hideSystemBars(): Int = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE

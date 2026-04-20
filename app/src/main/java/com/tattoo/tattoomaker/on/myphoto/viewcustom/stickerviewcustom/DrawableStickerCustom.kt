@@ -24,12 +24,11 @@ import com.tattoo.tattoomaker.on.myphoto.utils.ColorFilterGenerator
 import com.tattoo.tattoomaker.on.myphoto.utils.UtilsAdjust
 import com.tattoo.tattoomaker.on.myphoto.utils.UtilsBitmap
 import com.tattoo.tattoomaker.on.myphoto.viewcustom.stickerviewcustom.stickerview.Sticker
+import androidx.core.graphics.withMatrix
 
-open class DrawableStickerCustom(context: Context, o: Any?, id: Int, typeSticker: String) : Sticker() {
-
-    private val context: Context
-    val typeSticker: String
-    val id: Int
+open class DrawableStickerCustom(private val context: Context, o: Any?, val id: Int,
+                                 val typeSticker: String
+) : Sticker() {
 
     private val distance = 10
     private var drawable: Drawable? = null
@@ -44,14 +43,9 @@ open class DrawableStickerCustom(context: Context, o: Any?, id: Int, typeSticker
     private val paintBitmap = Paint(Paint.FILTER_BITMAP_FLAG)
 
     var isShadow = false
-    var tattooModel: TattooModel
+    var tattooModel: TattooModel? = o as? TattooModel
 
     init {
-        this.id = id
-        this.context = context
-        this.typeSticker = typeSticker
-        tattooModel = o as TattooModel
-
         if (typeSticker == Constant.TATTOO) initTattoo()
         else if (typeSticker == Constant.TATTOO_PREMIUM) initTattooPremium()
     }
@@ -66,9 +60,9 @@ open class DrawableStickerCustom(context: Context, o: Any?, id: Int, typeSticker
         if (paintTattoo == null) paintTattoo = Paint(Paint.ANTI_ALIAS_FLAG)
         if (pathTattoo == null) pathTattoo = Path()
 
-        if (tattooModel.lstPathData.isNotEmpty()) {
+        if (tattooModel!!.lstPathData.isNotEmpty()) {
             pathTattoo!!.reset()
-            for (path in tattooModel.lstPathData) {
+            for (path in tattooModel!!.lstPathData) {
                 if (path == "evenOdd") pathTattoo!!.fillType = Path.FillType.EVEN_ODD
                 else if (path.contains("#"))
                     paintTattoo!!.color = path.toColorInt()
@@ -76,12 +70,12 @@ open class DrawableStickerCustom(context: Context, o: Any?, id: Int, typeSticker
             }
             scalePath()
         }
-        if (tattooModel.colorModel != null) setColor(tattooModel.colorModel!!)
-        if (tattooModel.shadowModel != null) {
-            setShadowPathShape(tattooModel.lstPathData)
-            setShadow(tattooModel.shadowModel!!)
+        if (tattooModel!!.colorModel != null) setColor(tattooModel!!.colorModel!!)
+        if (tattooModel!!.shadowModel != null) {
+            setShadowPathShape(tattooModel!!.lstPathData)
+            setShadow(tattooModel!!.shadowModel!!)
         }
-        setAlpha(tattooModel.opacity)
+        setAlpha(tattooModel!!.opacity)
     }
 
     private fun scalePath() {
@@ -103,7 +97,7 @@ open class DrawableStickerCustom(context: Context, o: Any?, id: Int, typeSticker
         if (drawable == null)
             drawable = ContextCompat.getDrawable(context, R.drawable.sticker_transparent_text)
 
-        val bm = UtilsBitmap.getBitmapFromAsset(context, tattooModel.nameFolder, tattooModel.name)
+        val bm = UtilsBitmap.getBitmapFromAsset(context, tattooModel!!.nameFolder, tattooModel!!.name)
 
         bm?.let {
             bitmap = if (it.width > it.height)
@@ -111,8 +105,8 @@ open class DrawableStickerCustom(context: Context, o: Any?, id: Int, typeSticker
             else it.scale(720 * it.width / it.height, 720, false)
         }
 
-        setColorFilter(tattooModel.colorModel?.colorStart ?: Color.BLACK)
-        setAlpha(tattooModel.opacity)
+        setColorFilter(tattooModel!!.colorModel?.colorStart ?: Color.BLACK)
+        setAlpha(tattooModel!!.opacity)
 
         realBounds = RectF(
             distance.toFloat(),
@@ -128,53 +122,46 @@ open class DrawableStickerCustom(context: Context, o: Any?, id: Int, typeSticker
          */
         if (isShadow && (typeSticker == Constant.TATTOO_PREMIUM || typeSticker == Constant.TATTOO)) {
             if (typeSticker == Constant.TATTOO) {
-                canvas.save()
-                canvas.concat(matrix)
-                canvas.translate(
-                    realBounds!!.left.toInt().toFloat(),
-                    realBounds!!.top.toInt().toFloat()
-                )
-                canvas.drawPath(pathTattoo!!, shadowPaint!!)
-                canvas.restore()
+                canvas.withMatrix(matrix) {
+                    translate(realBounds!!.left.toInt().toFloat(), realBounds!!.top.toInt().toFloat())
+                    drawPath(pathTattoo!!, shadowPaint!!)
+                }
             } else {
-                canvas.save()
-                canvas.concat(matrix)
-                canvas.drawRect(realBounds!!, shadowPaint!!)
-                canvas.restore()
+                canvas.withMatrix(matrix) {
+                    drawRect(realBounds!!, shadowPaint!!)
+                }
             }
         }
 
-        canvas.save()
-        canvas.concat(matrix)
-        when (typeSticker) {
-            Constant.TATTOO_PREMIUM -> bitmap?.let {
-                canvas.drawBitmap(it, null, realBounds!!, paintBitmap)
-            }
-            Constant.TATTOO -> {
-                canvas.translate(
-                    realBounds!!.left.toInt().toFloat(),
-                    realBounds!!.top.toInt().toFloat()
-                )
-                canvas.drawPath(pathTattoo!!, paintTattoo!!)
+        canvas.withMatrix(matrix) {
+            when (typeSticker) {
+                Constant.TATTOO_PREMIUM -> bitmap?.let {
+                    drawBitmap(it, null, realBounds!!, paintBitmap)
+                }
+
+                Constant.TATTOO -> {
+                    realBounds?.let { bound ->
+                        translate(bound.left.toInt().toFloat(), bound.top.toInt().toFloat())
+                        drawPath(pathTattoo!!, paintTattoo!!)
+                    }
+                }
             }
         }
-        canvas.restore()
 
-        canvas.save()
-        canvas.concat(matrix)
-        if (typeSticker == Constant.STICKER_ICON) {
-            drawable!!.setBounds(0, 0, width, height)
-        } else if (typeSticker != Constant.TATTOO && !isShadow)
-            if (realBounds != null)
-                drawable!!.setBounds(
-                    realBounds!!.left.toInt(),
-                    realBounds!!.top.toInt(),
-                    realBounds!!.right.toInt(),
-                    realBounds!!.bottom.toInt()
-                )
+        canvas.withMatrix(matrix) {
+            if (typeSticker == Constant.STICKER_ICON) {
+                drawable!!.setBounds(0, 0, drawable!!.intrinsicWidth, drawable!!.intrinsicHeight)
+            } else if (typeSticker != Constant.TATTOO && !isShadow)
+                if (realBounds != null)
+                    drawable!!.setBounds(
+                        realBounds!!.left.toInt(),
+                        realBounds!!.top.toInt(),
+                        realBounds!!.right.toInt(),
+                        realBounds!!.bottom.toInt()
+                    )
 
-        drawable!!.draw(canvas)
-        canvas.restore()
+            drawable!!.draw(this)
+        }
     }
 
     override fun getWidth(): Int {
@@ -210,7 +197,7 @@ open class DrawableStickerCustom(context: Context, o: Any?, id: Int, typeSticker
     }
 
     fun setColor(color: ColorModel) {
-        tattooModel.colorModel = color
+        tattooModel!!.colorModel = color
         UtilsAdjust.setColor(color, paintTattoo!!, width.toFloat(), height.toFloat())
     }
 
